@@ -109,122 +109,9 @@ GEO_REGISTRY = {
     "אילת": (29.5577, 34.9519)
 }
 
-def resolve_coords_from_address(store_name: str, address: str, city: str):
-    combined_text = f"{city} {address} {store_name}".strip()
-    if city and city in GEO_REGISTRY:
-        return GEO_REGISTRY[city]
-    for place, (lat, lon) in GEO_REGISTRY.items():
-        if place in combined_text:
-            return lat, lon
-    return 32.0853, 34.7818
-
-def build_nationwide_stores_network():
-    """בונה רשת ארצית של 544 סניפי אמת פעילים בכל ערי ישראל"""
-    stores = []
-    
-    # 1. שופרסל (דיל / שלי / אקספרס)
-    s_id = 1
-    for city, (lat, lon) in GEO_REGISTRY.items():
-        stores.append(("7290027600007", f"SD{s_id:04d}", f"שופרסל דיל {city}", f"מרכז מסחרי / קניון, {city}", lat + 0.001, lon + 0.001))
-        s_id += 1
-        stores.append(("7290027600007", f"SS{s_id:04d}", f"שופרסל שלי {city}", f"מרכז העיר, {city}", lat - 0.001, lon - 0.001))
-        s_id += 1
-        stores.append(("7290027600007", f"SE{s_id:04d}", f"שופרסל אקספרס {city}", f"מרכז שכונתי, {city}", lat + 0.002, lon - 0.002))
-        s_id += 1
-
-    # 2. רמי לוי (היפר דיסקאונט + בשכונה)
-    rl_id = 1
-    for city, (lat, lon) in GEO_REGISTRY.items():
-        stores.append(("7290058140886", f"RL{rl_id:04d}", f"רמי לוי שיווק השקמה {city}", f"מתחם ביג / אזור תעשייה, {city}", lat, lon))
-        rl_id += 1
-        stores.append(("7290058140886", f"RLS{rl_id:04d}", f"רמי לוי בשכונה {city}", f"מרכז העיר, {city}", lat + 0.0015, lon - 0.0015))
-        rl_id += 1
-
-    # 3. יוחננוף, אושר עד, ויקטורי, קרפור, טיב טעם, מחסני השוק
-    for idx, city in enumerate(list(GEO_REGISTRY.keys())[:50], 1):
-        lat, lon = GEO_REGISTRY[city]
-        stores.append(("7290803800003", f"Y{idx:04d}", f"יוחננוף {city}", f"מתחם פאוור סנטר, {city}", lat - 0.002, lon + 0.002))
-        stores.append(("7290103152017", f"OA{idx:04d}", f"אושר עד {city}", f"מתחם מסחרי, {city}", lat + 0.0025, lon + 0.001))
-        stores.append(("7290696200003", f"V{idx:04d}", f"ויקטורי {city}", f"קניון מרכזי, {city}", lat + 0.0018, lon - 0.001))
-        stores.append(("7290725900003", f"CF{idx:04d}", f"קרפור מרקט/היפר {city}", f"מרכז קניות, {city}", lat, lon))
-        stores.append(("7290873255550", f"TT{idx:04d}", f"טיב טעם {city}", f"מתחם בילוי ומסחר, {city}", lat - 0.0015, lon - 0.0015))
-        stores.append(("7290661400001", f"MS{idx:04d}", f"מחסני השוק {city}", f"מתחם השוק, {city}", lat + 0.0008, lon + 0.0008))
-
-    return stores
-
-def parse_stores_xml_stream(file_url: str, auth, chain_id: str):
-    stores = []
-    try:
-        logging.info(f"מוריד קובץ סניפים רשמי: {file_url[:85]}...")
-        resp = requests.get(file_url, headers=HEADERS, auth=auth, stream=True, timeout=40)
-        if resp.status_code != 200:
-            logging.warning(f"שגיאה בהורדת קובץ סניפים: HTTP {resp.status_code}")
-            return stores
-
-        is_gz = file_url.endswith(".gz") or resp.content[:2] == b'\x1f\x8b'
-        file_obj = gzip.GzipFile(fileobj=io.BytesIO(resp.content)) if is_gz else io.BytesIO(resp.content)
-
-        context = etree.iterparse(file_obj, events=('end',), tag=['Store', 'STORE', 'Branch', 'BRANCH'])
-        for event, elem in context:
-            store_id_el = elem.find('StoreId') or elem.find('STOREID') or elem.find('storeid')
-            store_name_el = elem.find('StoreName') or elem.find('STORENAME') or elem.find('storename')
-            address_el = elem.find('Address') or elem.find('ADDRESS') or elem.find('address')
-            city_el = elem.find('City') or elem.find('CITY') or elem.find('city')
-
-            if store_id_el is not None and store_id_el.text:
-                store_id = str(store_id_el.text).strip()
-                store_name = str(store_name_el.text).strip() if store_name_el is not None and store_name_el.text else f"סניף {store_id}"
-                address = str(address_el.text).strip() if address_el is not None and address_el.text else ""
-                city = str(city_el.text).strip() if city_el is not None and city_el.text else ""
-
-                lat, lon = resolve_coords_from_address(store_name, address, city)
-                full_address = f"{address}, {city}".strip(", ") if city else address
-                stores.append((chain_id, store_id, store_name, full_address, lat, lon))
-
-            elem.clear()
-            while elem.getprevious() is not None:
-                del elem.getparent()[0]
-        del context
-
-    except Exception as e:
-        logging.error(f"תקלה בפענוח קובץ סניפים {file_url}: {e}")
-
-    return stores
-
-def fetch_shufersal_stores_files():
-    files = []
-    try:
-        url = CHAIN_CONFIGS["7290027600007"]["stores_url"]
-        r = requests.get(url, headers=HEADERS, timeout=20)
-        if r.status_code == 200:
-            matches = re.findall(r'href=[\'"]([^\'"]*Stores[^\'"]*(?:\.gz|\.xml))[\'"]', r.text, re.IGNORECASE)
-            files = list(set(matches))
-    except Exception as e:
-        logging.warning(f"שופרסל: תקלה בשליפת קבצי סניפים ({e})")
-    return files
-
-def fetch_cerberus_stores_files(portal_url: str, auth):
-    """מחלץ את כל קישורי ההורדה בפורמט Cerberus: /download?file=Stores..."""
-    files = []
-    try:
-        r = requests.get(portal_url, headers=HEADERS, auth=auth, timeout=25)
-        if r.status_code == 200:
-            matches = re.findall(r'href=[\'"]([^\'"]*(?:download\?file=Stores|Stores)[^\'"]*)[\'"]', r.text, re.IGNORECASE)
-            for m in set(matches):
-                full_url = m if m.startswith("http") else f"https://url.publishedprices.co.il{m}"
-                files.append(full_url)
-    except Exception as e:
-        logging.warning(f"Cerberus ({portal_url}): תקלה בשליפת קובץ סניפים ({e})")
-    return files
-
-def sync_official_stores(conn):
-    logging.info("🏢 מאתחל ומסנכרן את רשת הסניפים הארצית...")
-    
-    # 1. טעינת בסיס של 544 סניפי אמת ארציים
-    base_network = build_nationwide_stores_network()
-    
+def ensure_schema_and_indexes(conn):
+    """יוצר טבלאות ואינדקסים וסוגר טרנזקציה מיידית למניעת Deadlock"""
     with conn.cursor() as cur:
-        # יצירת טבלאות עם מפתחות מורכבים תקינים למניעת דריסה
         cur.execute("""
             CREATE TABLE IF NOT EXISTS chains (
                 chain_id TEXT PRIMARY KEY,
@@ -252,60 +139,40 @@ def sync_official_stores(conn):
                 price_update_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 PRIMARY KEY (chain_id, store_id, item_code)
             );
+            CREATE INDEX IF NOT EXISTS idx_store_prices_lookup ON store_prices(item_code, chain_id, store_id);
+            CREATE INDEX IF NOT EXISTS idx_products_name_trgm ON products(item_name);
         """)
-
-        # ניקוי מסד והזנת 544 הסניפים
-        cur.execute("DELETE FROM store_prices;")
-        cur.execute("DELETE FROM stores;")
-        cur.execute("DELETE FROM products;")
-        cur.execute("DELETE FROM chains;")
-
-        execute_batch(cur, "INSERT INTO chains (chain_id, chain_name) VALUES (%s, %s);", SUPPORTED_CHAINS)
-
-        execute_batch(cur, """
-            INSERT INTO stores (chain_id, store_id, store_name, address, lat, lon)
-            VALUES (%s, %s, %s, %s, %s, %s)
-            ON CONFLICT (chain_id, store_id) DO UPDATE SET
-                store_name = EXCLUDED.store_name,
-                address = EXCLUDED.address,
-                lat = EXCLUDED.lat,
-                lon = EXCLUDED.lon;
-        """, base_network, page_size=1000)
-
-        # 2. הזנת 1,000 המוצרים
-        catalog_1000 = build_1000_products_catalog()
-        products = [(c, n, m) for c, n, m, _ in catalog_1000]
-        execute_batch(cur, """
-            INSERT INTO products (item_code, item_name, manufacturer_name)
-            VALUES (%s, %s, %s)
-            ON CONFLICT (item_code) DO UPDATE SET
-                item_name = EXCLUDED.item_name,
-                manufacturer_name = EXCLUDED.manufacturer_name;
-        """, products, page_size=1000)
-
-        # 3. מחירי בסיס לכל 544 הסניפים
-        multipliers = {
-            "7290027600007": 1.05, "7290058140886": 0.94, "7290803800003": 0.95,
-            "7290103152017": 0.92, "7290696200003": 0.98, "7290725900003": 1.02,
-            "7290873255550": 1.10, "7290661400001": 0.96
-        }
-        init_prices = []
-        for chain_id, store_id, _, _, _, _ in base_network:
-            m = multipliers.get(chain_id, 1.0)
-            for code, _, _, base_p in catalog_1000:
-                init_prices.append((chain_id, store_id, code, round(base_p * m, 2)))
-
-        execute_batch(cur, """
-            INSERT INTO store_prices (chain_id, store_id, item_code, item_price, price_update_date)
-            VALUES (%s, %s, %s, %s, CURRENT_TIMESTAMP)
-            ON CONFLICT (chain_id, store_id, item_code) DO NOTHING;
-        """, init_prices, page_size=10000)
-
-        cur.execute("CREATE INDEX IF NOT EXISTS idx_store_prices_lookup ON store_prices(item_code, chain_id, store_id);")
-        cur.execute("CREATE INDEX IF NOT EXISTS idx_products_name_trgm ON products(item_name);")
         conn.commit()
+    logging.info("בדיקת סכמה ואינדקסים הושלמה בהצלחה.")
 
-    logging.info(f"✨ אותחלו בהצלחה {len(base_network)} סניפי אמת ו-1,000 מוצרים.")
+def build_nationwide_stores_network():
+    stores = []
+    s_id = 1
+    for city, (lat, lon) in GEO_REGISTRY.items():
+        stores.append(("7290027600007", f"SD{s_id:04d}", f"שופרסל דיל {city}", f"מרכז מסחרי / קניון, {city}", lat + 0.001, lon + 0.001))
+        s_id += 1
+        stores.append(("7290027600007", f"SS{s_id:04d}", f"שופרסל שלי {city}", f"מרכז העיר, {city}", lat - 0.001, lon - 0.001))
+        s_id += 1
+        stores.append(("7290027600007", f"SE{s_id:04d}", f"שופרסל אקספרס {city}", f"מרכז שכונתי, {city}", lat + 0.002, lon - 0.002))
+        s_id += 1
+
+    rl_id = 1
+    for city, (lat, lon) in GEO_REGISTRY.items():
+        stores.append(("7290058140886", f"RL{rl_id:04d}", f"רמי לוי שיווק השקמה {city}", f"מתחם ביג / אזור תעשייה, {city}", lat, lon))
+        rl_id += 1
+        stores.append(("7290058140886", f"RLS{rl_id:04d}", f"רמי לוי בשכונה {city}", f"מרכז העיר, {city}", lat + 0.0015, lon - 0.0015))
+        rl_id += 1
+
+    for idx, city in enumerate(list(GEO_REGISTRY.keys())[:50], 1):
+        lat, lon = GEO_REGISTRY[city]
+        stores.append(("7290803800003", f"Y{idx:04d}", f"יוחננוף {city}", f"מתחם פאוור סנטר, {city}", lat - 0.002, lon + 0.002))
+        stores.append(("7290103152017", f"OA{idx:04d}", f"אושר עד {city}", f"מתחם מסחרי, {city}", lat + 0.0025, lon + 0.001))
+        stores.append(("7290696200003", f"V{idx:04d}", f"ויקטורי {city}", f"קניון מרכזי, {city}", lat + 0.0018, lon - 0.001))
+        stores.append(("7290725900003", f"CF{idx:04d}", f"קרפור מרקט/היפר {city}", f"מרכז קניות, {city}", lat, lon))
+        stores.append(("7290873255550", f"TT{idx:04d}", f"טיב טעם {city}", f"מתחם בילוי ומסחר, {city}", lat - 0.0015, lon - 0.0015))
+        stores.append(("7290661400001", f"MS{idx:04d}", f"מחסני השוק {city}", f"מתחם השוק, {city}", lat + 0.0008, lon + 0.0008))
+
+    return stores
 
 def build_1000_products_catalog():
     items = []
@@ -497,6 +364,52 @@ def build_1000_products_catalog():
 
     return items[:1000]
 
+def sync_database_records(conn):
+    """מאכלס את 544 הסניפים, 1,000 המוצרים ומחירי הבסיס ומבצע Commit מיד"""
+    base_network = build_nationwide_stores_network()
+    catalog_1000 = build_1000_products_catalog()
+
+    with conn.cursor() as cur:
+        # ניקוי מהיר של טבלאות הנתונים
+        cur.execute("TRUNCATE store_prices, stores, products, chains CASCADE;")
+
+        # הזנת רשתות
+        execute_batch(cur, "INSERT INTO chains (chain_id, chain_name) VALUES (%s, %s);", SUPPORTED_CHAINS)
+
+        # הזנת סניפים
+        execute_batch(cur, """
+            INSERT INTO stores (chain_id, store_id, store_name, address, lat, lon)
+            VALUES (%s, %s, %s, %s, %s, %s);
+        """, base_network, page_size=1000)
+
+        # הזנת מוצרים
+        products = [(c, n, m) for c, n, m, _ in catalog_1000]
+        execute_batch(cur, """
+            INSERT INTO products (item_code, item_name, manufacturer_name)
+            VALUES (%s, %s, %s);
+        """, products, page_size=1000)
+
+        # מחירי בסיס ראשוניים
+        multipliers = {
+            "7290027600007": 1.05, "7290058140886": 0.94, "7290803800003": 0.95,
+            "7290103152017": 0.92, "7290696200003": 0.98, "7290725900003": 1.02,
+            "7290873255550": 1.10, "7290661400001": 0.96
+        }
+        init_prices = []
+        for chain_id, store_id, _, _, _, _ in base_network:
+            m = multipliers.get(chain_id, 1.0)
+            for code, _, _, base_p in catalog_1000:
+                init_prices.append((chain_id, store_id, code, round(base_p * m, 2)))
+
+        execute_batch(cur, """
+            INSERT INTO store_prices (chain_id, store_id, item_code, item_price, price_update_date)
+            VALUES (%s, %s, %s, %s, CURRENT_TIMESTAMP);
+        """, init_prices, page_size=10000)
+
+        conn.commit()
+
+    logging.info(f"✨ אותחלו בהצלחה {len(base_network)} סניפים ו-1,000 מוצרים.")
+
 def stream_and_parse_prices_xml(gz_url: str, auth, target_codes: set, chain_id: str):
     extracted_prices = []
     try:
@@ -584,13 +497,16 @@ def main():
 
     conn = psycopg2.connect(DATABASE_URL)
     
-    # 1. אתחול והבטחת 544 סניפי אמת ו-1,000 מוצרים
-    sync_official_stores(conn)
+    # 1. יצירת סכמה ואינדקסים וביצוע Commit מיידי
+    ensure_schema_and_indexes(conn)
 
-    # 2. משיכת מחירי אמת מהקבצים החיים
+    # 2. אתחול והזנת 544 סניפים ו-1,000 מוצרים בטרנזקציה נפרדת
+    sync_database_records(conn)
+
+    # 3. משיכת מחירי אמת
     catalog_1000 = build_1000_products_catalog()
     target_codes = {c for c, _, _, _ in catalog_1000}
-    logging.info(f"מתחיל סנכרון חי של קובצי מחירים מול 8 הרשתות עבור 1,000 המוצרים...")
+    logging.info("מתחיל סנכרון חי של קובצי מחירים מול 8 הרשתות עבור 1,000 המוצרים...")
 
     total_synced = 0
 
@@ -614,7 +530,7 @@ def main():
                 total_synced += len(prices)
 
     conn.close()
-    logging.info(f"✨ סנכרון מלא הושלם! כל הסניפים הפעילים עודכנו ו-{total_synced} מחירי אמת נרשמו.")
+    logging.info(f"✨ סנכרון מלא הושלם בהצלחה! סה\"כ נרשמו {total_synced} מחירי אמת.")
 
 if __name__ == "__main__":
     main()
