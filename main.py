@@ -25,21 +25,54 @@ class BasketQuery(BaseModel):
     user_lon: float = 35.5422
     max_radius: float = 60.0
 
+def split_smart_stream(raw_text: str) -> list[str]:
+    """מפצל טקסט חופשי לרשימת פריטים גם ללא פסיקים או ירידות שורה"""
+    text = raw_text.strip()
+    if not text:
+        return []
+
+    # 1. אם יש פסיקים, נקודה-פסיק או שורות חדשות - נפצל לפיהם קודם
+    if re.search(r'[,;\n]', text):
+        chunks = re.split(r'[,;\n]+', text)
+    else:
+        chunks = [text]
+
+    final_items = []
+    for chunk in chunks:
+        chunk = chunk.strip()
+        if not chunk:
+            continue
+
+        # 2. זיהוי גבולות כמות (לדוגמה: "4 חלב 2 קוטג 5% 3 קולה 1.5 ליטר")
+        # מפצל לפני ספרה שלא מלווה בנקודה עשרונית (נפח) ולא אחרי אחוזים
+        sub_items = re.split(r'(?<=[^\d%.\s])\s+(?=\d+\s*(?:יחידות|יח|x|\*|\s)\s*[א-ת])', chunk)
+        
+        if len(sub_items) > 1:
+            final_items.extend([s.strip() for s in sub_items if s.strip()])
+        else:
+            # 3. אם מדובר ברצף מילים ללא ספרות כלל (למשל: "חלב ביצים קוטג לחם")
+            words = chunk.split()
+            if len(words) > 3 and not any(char.isdigit() for char in chunk):
+                final_items.extend(words)
+            else:
+                final_items.append(chunk)
+
+    return final_items
+
 def parse_item_and_qty(raw_text: str):
-    """מפענח חכם המפריד בין כמות לשם המוצר"""
+    """מפריד כמות משם המוצר"""
     text = raw_text.strip()
     if not text:
         return "", 1
 
-    # תבנית 1: כמות בהתחלה (למשל: "4 חלב", "2x קוטג", "3 יחידות ביצים", "2*קולה")
+    # תבנית כמות בהתחלה (למשל: "4 חלב", "2x קוטג")
     match = re.match(r'^(\d+)\s*(?:יחידות|יח[\'"]?|x|\*|\s)?\s*(.+)$', text, re.IGNORECASE)
     if match:
         qty_str, name = match.groups()
-        # מניעת זיהוי שגוי של אחוזי שומן ככמות (לדוגמה: "3% חלב")
         if not name.startswith('%') and name.strip():
             return name.strip(), max(1, int(qty_str))
 
-    # תבנית 2: כמות בסוף (למשל: "חלב x 4", "קוטג 5% * 2", "לחם 3 יחידות", "קולה כפול 2")
+    # תבנית כמות בסוף (למשל: "חלב x 4", "קוטג כפול 2")
     match = re.match(r'^(.+?)\s*(?:x|\*|כפול|יחידות|יח[\'"]?)\s*(\d+)$', text, re.IGNORECASE)
     if match:
         name, qty_str = match.groups()
@@ -97,7 +130,7 @@ def live_compare(query: BasketQuery):
         conn = psycopg2.connect(DATABASE_URL)
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
-        # 1. שליפת כל הסניפים והרשתות
+        # 1. שליפת רשימת הסניפים
         cur.execute("""
             SELECT s.chain_id, s.store_id, c.chain_name, s.store_name, s.address, s.lat, s.lon
             FROM stores s
@@ -110,12 +143,14 @@ def live_compare(query: BasketQuery):
             conn.close()
             return {"status": "success", "results": []}
 
-        # 2. פענוח המוצרים והכמויות מהקלט
+        # 2. פענוח חכם של כל קלט הפריטים
+        raw_combined = " ".join(query.items)
+        split_items = split_smart_stream(raw_combined)
+
         parsed_items = []
-        for it in query.items:
-            it = it.strip()
-            if it:
-                item_name, qty = parse_item_and_qty(it)
+        for it in split_items:
+            item_name, qty = parse_item_and_qty(it)
+            if item_name:
                 parsed_items.append({
                     "raw": it,
                     "search_term": item_name,
@@ -140,7 +175,7 @@ def live_compare(query: BasketQuery):
                         "item_name": res["item_name"]
                     }
 
-        # 4. משיכת כל המחירים בבת אחת
+        # 4. משיכת המחירים מכל הסניפים
         product_codes = [v["item_code"] for v in matched_items_map.values()]
         prices_lookup = {}
 
@@ -157,7 +192,7 @@ def live_compare(query: BasketQuery):
         cur.close()
         conn.close()
 
-        # 5. הרכבת תוצאות הסל כולל חישוב כמויות ומחיר שורה
+        # 5. חישוב סלי הקניות
         results = []
         for s in stores:
             chain_id = s["chain_id"]
