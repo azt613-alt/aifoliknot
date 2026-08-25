@@ -1,5 +1,6 @@
 import os
 import io
+import re
 import gzip
 import logging
 import requests
@@ -7,7 +8,6 @@ import psycopg2
 from psycopg2.extras import execute_batch
 from requests.auth import HTTPBasicAuth
 from lxml import etree
-from bs4 import BeautifulSoup
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -111,10 +111,9 @@ GEO_REGISTRY = {
 }
 
 def build_1000_products_catalog():
-    """מייצר קטלוג של 1,000 מוצרים אמיתיים ומבוקשים בישראל עם ברקודים תקניים"""
     items = []
     
-    # 1. מוצרי חלב, ביצים ותחליפים (120 מוצרים)
+    # חלב וביצים
     dairies = [
         ("7290000066707", "חלב תנובה 3% בקרטון 1 ליטר", "תנובה", 7.23),
         ("7290000066714", "חלב תנובה 1% בקרטון 1 ליטר", "תנובה", 6.81),
@@ -161,7 +160,7 @@ def build_1000_products_catalog():
     for i in range(len(dairies) + 1, 121):
         items.append((f"7290011{i:06d}", f"יוגורט / מעדן מיוחד סדרה {i} 150 גרם", "מחלבות ישראל", round(4.20 + (i % 8) * 0.5, 2)))
 
-    # 2. ירקות ופירות טריים (100 מוצרים)
+    # ירקות ופירות
     veg_fruits = [
         ("7290020000011", "עגבניות חממה טריות 1 קג", "תוצרת מקומית", 6.90),
         ("7290020000028", "עגבניות שרי אשכול 500 גרם", "תוצרת מקומית", 8.90),
@@ -204,7 +203,7 @@ def build_1000_products_catalog():
     for i in range(len(veg_fruits) + 1, 101):
         items.append((f"7290022{i:06d}", f"מארז ירק / לקט פרי עונתי סוג {i}", "חקלאי ישראל", round(4.50 + (i % 10) * 0.7, 2)))
 
-    # 3. בשר, עוף, דגים ותחליפים (100 מוצרים)
+    # בשר ועוף
     meats = [
         ("7290000210018", "חזה עוף שלם טרי 1 קג", "עוף טוב", 34.90),
         ("7290000210025", "חזה עוף פרוס לשניצל טרי 1 קג", "עוף טוב", 38.90),
@@ -232,7 +231,7 @@ def build_1000_products_catalog():
     for i in range(len(meats) + 1, 101):
         items.append((f"7290033{i:06d}", f"נתח בשר / עוף / דג פרימיום סוג {i} 500 גרם", "קצביות מובחרות", round(24.0 + (i % 35) * 1.2, 2)))
 
-    # 4. לחמים, מאפים ומזווה יבש (150 מוצרים)
+    # לחם ומזווה
     bakery_pantry = [
         ("7290004127312", "לחם אחיד פרוס 750 גרם", "אנגל", 8.20),
         ("7290004127329", "חלה לשבת קלועה 500 גרם", "אנגל", 7.50),
@@ -263,7 +262,7 @@ def build_1000_products_catalog():
     for i in range(len(bakery_pantry) + 1, 151):
         items.append((f"7290044{i:06d}", f"מוצר מזווה / שימורים / תבלין סוג {i}", "אסם / סוגת", round(4.90 + (i % 12) * 0.8, 2)))
 
-    # 5. חטיפים, ממתקים, משקאות וקפה (200 מוצרים)
+    # חטיפים ומשקאות
     snacks_drinks = [
         ("7290000073333", "במבה אסם קלאסית 80 גרם", "אסם", 4.90),
         ("7290000074444", "ביסלי גריל אסם 70 גרם", "אסם", 4.90),
@@ -285,7 +284,7 @@ def build_1000_products_catalog():
     for i in range(len(snacks_drinks) + 1, 201):
         items.append((f"7290055{i:06d}", f"משקה / חטיף / ממתק איכותי סוג {i}", "שטראוס / טמפו", round(3.50 + (i % 15) * 0.9, 2)))
 
-    # 6. קפואים, פארם, ניקיון ותינוקות (330 מוצרים להשלמת 1,000 מוצרים מלאים)
+    # קפואים, פארם וניקיון להשלמת 1,000 מוצרים מלאים
     non_food = [
         ("7290000320014", "סנפרוסט אפונה עדינה 800 גרם", "סנפרוסט", 16.90),
         ("7290000320021", "סנפרוסט תירס מתוק 800 גרם", "סנפרוסט", 15.90),
@@ -308,7 +307,6 @@ def build_1000_products_catalog():
     return items[:1000]
 
 def build_supported_stores_network():
-    """בונה את רשת הסניפים המלאה עבור 8 הרשתות הנתמכות (544 סניפים)"""
     stores = []
     
     # 1. שופרסל (דיל, שלי, אקספרס)
@@ -321,7 +319,7 @@ def build_supported_stores_network():
         stores.append(("7290027600007", f"SE{s_id:04d}", f"שופרסל אקספרס {city}", f"מרכז שכונתי, {city}", lat + 0.002, lon - 0.002))
         s_id += 1
 
-    # 2. רמי לוי (היפר דיסקאונט + בשכונה)
+    # 2. רמי לוי (שיווק השקמה + בשכונה)
     rl_id = 1
     for city, (lat, lon) in GEO_REGISTRY.items():
         stores.append(("7290058140886", f"RL{rl_id:04d}", f"רמי לוי שיווק השקמה {city}", f"אזור תעשייה / מתחם ביג, {city}", lat, lon))
@@ -386,11 +384,9 @@ def get_shufersal_files():
         url = CHAIN_CONFIGS["7290027600007"]["url"]
         r = requests.get(url, headers=HEADERS, timeout=20)
         if r.status_code == 200:
-            soup = BeautifulSoup(r.text, 'html.parser')
-            for a in soup.find_all('a', href=True):
-                href = a['href']
-                if "PriceFull" in href and href.endswith(".gz"):
-                    files.append(href)
+            # חילוץ קישורים בעזרת regex ללא תלות ב-BeautifulSoup
+            matches = re.findall(r'href=[\'"]([^\'"]*PriceFull[^\'"]*\.gz)[\'"]', r.text, re.IGNORECASE)
+            files.extend(matches)
     except Exception as e:
         logging.warning(f"שופרסל: תקלה בשליפת רשימת קבצים ({e})")
     return files[:3]
@@ -400,18 +396,16 @@ def get_cerberus_files(portal_url: str, auth):
     try:
         r = requests.get(portal_url, headers=HEADERS, auth=auth, timeout=25)
         if r.status_code == 200:
-            soup = BeautifulSoup(r.text, 'html.parser')
-            for a in soup.find_all('a', href=True):
-                href = a['href']
-                if "PriceFull" in href and (href.endswith(".gz") or href.endswith(".xml")):
-                    full_url = href if href.startswith("http") else f"https://url.publishedprices.co.il{href}"
-                    files.append(full_url)
+            # חילוץ קישורים בעזרת regex ללא תלות ב-BeautifulSoup
+            matches = re.findall(r'href=[\'"]([^\'"]*PriceFull[^\'"]*(?:\.gz|\.xml))[\'"]', r.text, re.IGNORECASE)
+            for href in matches:
+                full_url = href if href.startswith("http") else f"https://url.publishedprices.co.il{href}"
+                files.append(full_url)
     except Exception as e:
         logging.warning(f"Cerberus ({portal_url}): תקלה בשליפת קבצים ({e})")
     return files[:2]
 
 def reset_database_with_1000_products(conn):
-    """מאכלס את מסד הנתונים ב-1,000 מוצרים מלאים וב-544 סניפים"""
     with conn.cursor() as cur:
         logging.info("🧹 מאפס ומכין קטלוג של 1,000 מוצרים...")
         cur.execute("DELETE FROM store_prices;")
@@ -429,7 +423,7 @@ def reset_database_with_1000_products(conn):
             VALUES (%s, %s, %s, %s, %s, %s);
         """, all_stores, page_size=1000)
 
-        # 3. הזנת 1,000 מוצרים מלאים לקטלוג
+        # 3. הזנת 1,000 מוצרים
         catalog_1000 = build_1000_products_catalog()
         products = [(c, n, m) for c, n, m, _ in catalog_1000]
         execute_batch(cur, """
@@ -486,7 +480,7 @@ def main():
 
     catalog_1000 = build_1000_products_catalog()
     target_codes = {c for c, _, _, _ in catalog_1000}
-    logging.info(f"מתחיל סנכרון חי של קובצי XML מול 8 הרשתות הנתמכות עבור 1,000 המוצרים...")
+    logging.info(f"מתחיל סנכרון חי של קובצי XML מול 8 הרשתות עבור 1,000 המוצרים...")
 
     total_synced = 0
 
@@ -498,7 +492,7 @@ def main():
             upsert_live_prices(conn, prices)
             total_synced += len(prices)
 
-    # 2. שאר 7 הרשתות ב-Cerberus
+    # 2. 7 רשתות Cerberus
     cerberus_chains = ["7290058140886", "7290803800003", "7290103152017", "7290696200003", "7290725900003", "7290873255550", "7290661400001"]
     for c_id in cerberus_chains:
         cfg = CHAIN_CONFIGS[c_id]
