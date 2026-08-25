@@ -1,3 +1,4 @@
+from live_scraper import main as run_scraper_task
 import os
 import psycopg2
 from fastapi import FastAPI
@@ -94,3 +95,7 @@ def live_compare(query: BasketQuery):
     conn.close()
     results.sort(key=lambda x: x["total_price"])
     return {"status": "success", "results": results}
+    @app.get("/api/run-scraper")
+def trigger_scraper():
+    run_scraper_task()
+    return {"status": "success", "message": "Scraper completed successfully"}
