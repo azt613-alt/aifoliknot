@@ -1,5 +1,6 @@
 import os
 import io
+import re
 import gzip
 import logging
 import requests
@@ -22,24 +23,15 @@ SUPPORTED_CHAINS = [
     ("7290661400001", "מחסני השוק")
 ]
 
-# כתובות ישירות ומאומתות לקובצי ה-Stores של כל רשת
-DIRECT_STORE_URLS = [
-    # שופרסל (קטגוריה 5 - סניפים)
+CHAIN_PORTALS = [
     ("7290027600007", "http://prices.shufersal.co.il/FileObject/UpdateCategory?catID=5&sort=Time&sortdir=DESC", None),
-    # רמי לוי
-    ("7290058140886", "https://url.publishedprices.co.il/file/d/RamiLevi/download?file=Stores7290058140886-000.gz", HTTPBasicAuth("RamiLevi", "")),
-    # יוחננוף
-    ("7290803800003", "https://url.publishedprices.co.il/file/d/yohananof/download?file=Stores7290803800003-000.gz", HTTPBasicAuth("yohananof", "")),
-    # אושר עד
-    ("7290103152017", "https://url.publishedprices.co.il/file/d/OsherAd/download?file=Stores7290103152017-000.gz", HTTPBasicAuth("OsherAd", "")),
-    # ויקטורי
-    ("7290696200003", "https://url.publishedprices.co.il/file/d/Victory/download?file=Stores7290696200003-000.gz", HTTPBasicAuth("Victory", "")),
-    # קרפור (Mega)
-    ("7290725900003", "https://url.publishedprices.co.il/file/d/Mega/download?file=Stores7290725900003-000.gz", HTTPBasicAuth("Mega", "")),
-    # טיב טעם
-    ("7290873255550", "https://url.publishedprices.co.il/file/d/TivTaam/download?file=Stores7290873255550-000.gz", HTTPBasicAuth("TivTaam", "")),
-    # מחסני השוק
-    ("7290661400001", "https://url.publishedprices.co.il/file/d/Coop/download?file=Stores7290661400001-000.gz", HTTPBasicAuth("Coop", ""))
+    ("7290058140886", "https://url.publishedprices.co.il/file/d/RamiLevi", HTTPBasicAuth("RamiLevi", "")),
+    ("7290803800003", "https://url.publishedprices.co.il/file/d/yohananof", HTTPBasicAuth("yohananof", "")),
+    ("7290103152017", "https://url.publishedprices.co.il/file/d/OsherAd", HTTPBasicAuth("OsherAd", "")),
+    ("7290696200003", "https://url.publishedprices.co.il/file/d/Victory", HTTPBasicAuth("Victory", "")),
+    ("7290725900003", "https://url.publishedprices.co.il/file/d/Mega", HTTPBasicAuth("Mega", "")),
+    ("7290873255550", "https://url.publishedprices.co.il/file/d/TivTaam", HTTPBasicAuth("TivTaam", "")),
+    ("7290661400001", "https://url.publishedprices.co.il/file/d/Coop", HTTPBasicAuth("Coop", ""))
 ]
 
 HEADERS = {
@@ -89,6 +81,11 @@ def resolve_coords(store_name: str, address: str, city: str):
 
 def parse_stores_xml_content(content: bytes, chain_id: str):
     stores = []
+    # וידוא שהתוכן הוא אכן קובץ דחוס או XML ולא דף HTML שגוי
+    if content.lstrip().startswith(b'<!DOCTYPE') or content.lstrip().startswith(b'<html') or content.lstrip().startswith(b'<HTML'):
+        logging.warning("התקבל דף HTML במקום קובץ XML/GZ סניפים תקין.")
+        return stores
+
     try:
         is_gz = content[:2] == b'\x1f\x8b'
         file_obj = gzip.GzipFile(fileobj=io.BytesIO(content)) if is_gz else io.BytesIO(content)
@@ -158,19 +155,17 @@ def main():
 
     all_official_stores = []
 
-    for chain_id, target_url, auth in DIRECT_STORE_URLS:
+    for chain_id, portal_url, auth in CHAIN_PORTALS:
         session = requests.Session()
         session.headers.update(HEADERS)
         if auth:
             session.auth = auth
 
         try:
-            logging.info(f"מוריד קובץ סניפים עבור רשת {chain_id}...")
-            r = session.get(target_url, timeout=35)
+            logging.info(f"סורק פורטל עבור רשת {chain_id}...")
+            r = session.get(portal_url, timeout=35)
             if r.status_code == 200:
-                # עבור שופרסל צריך לחלץ את הקישור מתוך דף ה-API
                 if chain_id == "7290027600007":
-                    import re
                     urls = re.findall(r'href=[\'"]([^\'"]*Stores[^\'"]*)[\'"]', r.text, re.IGNORECASE)
                     for u in set(urls):
                         file_url = u if u.startswith("http") else f"http://prices.shufersal.co.il{u}"
@@ -178,15 +173,34 @@ def main():
                         if f_resp.status_code == 200:
                             parsed = parse_stores_xml_content(f_resp.content, chain_id)
                             all_official_stores.extend(parsed)
-                            logging.info(f"שופרסל: נפרקו בהצלחה {len(parsed)} סניפים")
                 else:
-                    parsed = parse_stores_xml_content(r.content, chain_id)
-                    all_official_stores.extend(parsed)
-                    logging.info(f"רשת {chain_id}: נפרקו בהצלחה {len(parsed)} סניפים")
+                    # חילוץ שמות קובצי ה-Stores מתוך דף הפורטל
+                    matches = re.findall(r'href=[\'"]([^\'"]*Stores[^\'"]*)[\'"]', r.text, re.IGNORECASE)
+                    if not matches:
+                        matches = re.findall(r'([^\'"<>]*Stores[^\'"<>]*\.(?:gz|xml))', r.text, re.IGNORECASE)
+
+                    for m in set(matches):
+                        m_clean = m.strip().split('"')[0].split("'")[0]
+                        if m_clean.startswith("http"):
+                            file_url = m_clean
+                        elif m_clean.startswith("/"):
+                            file_url = f"https://url.publishedprices.co.il{m_clean}"
+                        else:
+                            username = auth.username
+                            file_url = f"https://url.publishedprices.co.il/file/d/{username}/download?file={m_clean}"
+
+                        logging.info(f"מוריד קובץ סניפים: {file_url[:80]}...")
+                        f_resp = session.get(file_url, timeout=35)
+                        if f_resp.status_code == 200:
+                            parsed = parse_stores_xml_content(f_resp.content, chain_id)
+                            if parsed:
+                                all_official_stores.extend(parsed)
+                                logging.info(f"רשת {chain_id}: נפרקו בהצלחה {len(parsed)} סניפים")
+                                break
             else:
                 logging.warning(f"רשת {chain_id}: שגיאת HTTP {r.status_code}")
         except Exception as e:
-            logging.error(f"שגיאה בהורדת סניפים לרשת {chain_id}: {e}")
+            logging.error(f"שגיאה בעיבוד רשת {chain_id}: {e}")
 
     unique_stores = list({(s[0], s[1]): s for s in all_official_stores}.values())
     logging.info(f"🎯 סה\"כ חולצו {len(unique_stores)} סניפי אמת פעילים מכל הרשתות!")
@@ -206,7 +220,7 @@ def main():
             """
             execute_batch(cur, query, unique_stores, page_size=1000)
             conn.commit()
-        logging.info("✅ כל סניפי האמת הרשמיים נרשמו בהצלחה ב-Supabase!")
+        logging.info("✅ כל סניפי האמת הרשמיים נרשמו בהצלחה בגלריה ב-Supabase!")
 
     conn.close()
 
