@@ -81,9 +81,7 @@ def resolve_coords(store_name: str, address: str, city: str):
 
 def parse_stores_xml_content(content: bytes, chain_id: str):
     stores = []
-    # וידוא שהתוכן הוא אכן קובץ דחוס או XML ולא דף HTML שגוי
     if content.lstrip().startswith(b'<!DOCTYPE') or content.lstrip().startswith(b'<html') or content.lstrip().startswith(b'<HTML'):
-        logging.warning("התקבל דף HTML במקום קובץ XML/GZ סניפים תקין.")
         return stores
 
     try:
@@ -165,38 +163,30 @@ def main():
             logging.info(f"סורק פורטל עבור רשת {chain_id}...")
             r = session.get(portal_url, timeout=35)
             if r.status_code == 200:
-                if chain_id == "7290027600007":
-                    urls = re.findall(r'href=[\'"]([^\'"]*Stores[^\'"]*)[\'"]', r.text, re.IGNORECASE)
-                    for u in set(urls):
-                        file_url = u if u.startswith("http") else f"http://prices.shufersal.co.il{u}"
-                        f_resp = session.get(file_url, timeout=30)
-                        if f_resp.status_code == 200:
-                            parsed = parse_stores_xml_content(f_resp.content, chain_id)
+                # חיפוש כל קישור או קובץ שמכיל את המילים store או stores (באותיות קטנות או גדולות)
+                matches = re.findall(r'href=[\'"]([^\'"]*(?:store|stores)[^\'"]*)[\'"]', r.text, re.IGNORECASE)
+                if not matches:
+                    matches = re.findall(r'([^\'"<>]*?(?:store|stores)[^\'"<>]*\.(?:gz|xml))', r.text, re.IGNORECASE)
+
+                logging.info(f"רשת {chain_id}: נמצאו {len(matches)} התאמות לקובצי סניפים")
+
+                for m in set(matches):
+                    m_clean = m.strip().split('"')[0].split("'")[0]
+                    if m_clean.startswith("http"):
+                        file_url = m_clean
+                    elif m_clean.startswith("/"):
+                        file_url = f"https://url.publishedprices.co.il{m_clean}" if auth else f"http://prices.shufersal.co.il{m_clean}"
+                    else:
+                        username = auth.username if auth else ""
+                        file_url = f"https://url.publishedprices.co.il/file/d/{username}/download?file={m_clean}" if username else f"http://prices.shufersal.co.il/{m_clean}"
+
+                    f_resp = session.get(file_url, timeout=35)
+                    if f_resp.status_code == 200:
+                        parsed = parse_stores_xml_content(f_resp.content, chain_id)
+                        if parsed:
                             all_official_stores.extend(parsed)
-                else:
-                    # חילוץ שמות קובצי ה-Stores מתוך דף הפורטל
-                    matches = re.findall(r'href=[\'"]([^\'"]*Stores[^\'"]*)[\'"]', r.text, re.IGNORECASE)
-                    if not matches:
-                        matches = re.findall(r'([^\'"<>]*Stores[^\'"<>]*\.(?:gz|xml))', r.text, re.IGNORECASE)
-
-                    for m in set(matches):
-                        m_clean = m.strip().split('"')[0].split("'")[0]
-                        if m_clean.startswith("http"):
-                            file_url = m_clean
-                        elif m_clean.startswith("/"):
-                            file_url = f"https://url.publishedprices.co.il{m_clean}"
-                        else:
-                            username = auth.username
-                            file_url = f"https://url.publishedprices.co.il/file/d/{username}/download?file={m_clean}"
-
-                        logging.info(f"מוריד קובץ סניפים: {file_url[:80]}...")
-                        f_resp = session.get(file_url, timeout=35)
-                        if f_resp.status_code == 200:
-                            parsed = parse_stores_xml_content(f_resp.content, chain_id)
-                            if parsed:
-                                all_official_stores.extend(parsed)
-                                logging.info(f"רשת {chain_id}: נפרקו בהצלחה {len(parsed)} סניפים")
-                                break
+                            logging.info(f"רשת {chain_id}: נפרקו בהצלחה {len(parsed)} סניפים")
+                            break
             else:
                 logging.warning(f"רשת {chain_id}: שגיאת HTTP {r.status_code}")
         except Exception as e:
@@ -220,7 +210,7 @@ def main():
             """
             execute_batch(cur, query, unique_stores, page_size=1000)
             conn.commit()
-        logging.info("✅ כל סניפי האמת הרשמיים נרשמו בהצלחה בגלריה ב-Supabase!")
+        logging.info("✅ כל סניפי האמת הרשמיים נרשמו בהצלחה ב-Supabase!")
 
     conn.close()
 
