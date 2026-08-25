@@ -93,12 +93,13 @@ GEO_REGISTRY = {
     "בת ים": (32.0200, 34.7500), "ראשון לציון": (31.9730, 34.7925), "נס ציונה": (31.9300, 34.7990),
     "רחובות": (31.8928, 34.8113), "באר יעקב": (31.9380, 34.8350), "רמלה": (31.9270, 34.8640),
     "לוד": (31.9520, 34.8970), "שוהם": (31.9980, 34.9450), "מודיעין מכבים רעות": (31.8903, 35.0104),
-    "מודיעין": (31.8903, 35.0104), "ירושלים": (31.7683, 35.2137), "מבשרת ציון": (31.7997, 35.1542),
-    "מעלה אדומים": (31.7921, 35.2974), "בית שמש": (31.7470, 34.9881), "יבנה": (31.8767, 34.7408),
-    "אשדוד": (31.8044, 34.6553), "אשקלון": (31.6688, 34.5743), "קרית גת": (31.6100, 34.7640),
-    "שדרות": (31.5215, 34.5959), "נתיבות": (31.4200, 34.5800), "אופקים": (31.3140, 34.6200),
-    "באר שבע": (31.2529, 34.7915), "דימונה": (31.0700, 35.0300), "ערד": (31.2610, 35.2140),
-    "אילת": (29.5577, 34.9519)
+    "מודיעין": (31.8903, 35.0104), "מודיעין עילית": (31.9330, 35.0400), "ירושלים": (31.7683, 35.2137),
+    "מבשרת ציון": (31.7997, 35.1542), "מעלה אדומים": (31.7921, 35.2974), "בית שמש": (31.7470, 34.9881),
+    "ביתר עילית": (31.6980, 35.1150), "יבנה": (31.8767, 34.7408), "גדרה": (31.8130, 34.7780),
+    "גן יבנה": (31.7880, 34.7150), "קרית עקרון": (31.8600, 34.8200), "אשדוד": (31.8044, 34.6553),
+    "אשקלון": (31.6688, 34.5743), "קרית גת": (31.6100, 34.7640), "שדרות": (31.5215, 34.5959),
+    "נתיבות": (31.4200, 34.5800), "אופקים": (31.3140, 34.6200), "באר שבע": (31.2529, 34.7915),
+    "דימונה": (31.0700, 35.0300), "ערד": (31.2610, 35.2140), "אילת": (29.5577, 34.9519)
 }
 
 def resolve_coords(store_name: str, address: str, city: str):
@@ -110,16 +111,11 @@ def resolve_coords(store_name: str, address: str, city: str):
             return coords
     return 32.0853, 34.7818
 
-def parse_stores_xml(file_url: str, auth, chain_id: str):
+def parse_stores_xml_content(content: bytes, chain_id: str):
     stores = []
     try:
-        logging.info(f"מוריד ומפענח XML רשמי: {file_url[:80]}...")
-        resp = requests.get(file_url, headers=HEADERS, auth=auth, stream=True, timeout=35)
-        if resp.status_code != 200:
-            return stores
-
-        is_gz = file_url.endswith(".gz") or resp.content[:2] == b'\x1f\x8b'
-        file_obj = gzip.GzipFile(fileobj=io.BytesIO(resp.content)) if is_gz else io.BytesIO(resp.content)
+        is_gz = content[:2] == b'\x1f\x8b'
+        file_obj = gzip.GzipFile(fileobj=io.BytesIO(content)) if is_gz else io.BytesIO(content)
 
         context = etree.iterparse(file_obj, events=('end',), tag=['Store', 'STORE', 'store', 'Branch', 'BRANCH'])
         for _, elem in context:
@@ -153,34 +149,75 @@ def parse_stores_xml(file_url: str, auth, chain_id: str):
                 del elem.getparent()[0]
         del context
     except Exception as e:
-        logging.error(f"שגיאה בעיבוד {file_url}: {e}")
+        logging.error(f"שגיאה בפענוח XML: {e}")
     return stores
 
-def fetch_shufersal_urls():
+def fetch_shufersal_stores():
+    stores = []
+    session = requests.Session()
+    session.headers.update(HEADERS)
+    url = CHAIN_CONFIGS["7290027600007"]["stores_url"]
     try:
-        r = requests.get(CHAIN_CONFIGS["7290027600007"]["stores_url"], headers=HEADERS, timeout=20)
+        r = session.get(url, timeout=25)
         if r.status_code == 200:
-            return list(set(re.findall(r'href=[\'"]([^\'"]*Stores[^\'"]*\.gz)[\'"]', r.text, re.IGNORECASE)))
+            urls = re.findall(r'href=[\'"]([^\'"]*Stores[^\'"]*)[\'"]', r.text, re.IGNORECASE)
+            for u in set(urls):
+                file_url = u if u.startswith("http") else f"http://prices.shufersal.co.il{u}"
+                logging.info(f"שופרסל: מוריד {file_url[:70]}...")
+                f_resp = session.get(file_url, timeout=30)
+                if f_resp.status_code == 200:
+                    parsed = parse_stores_xml_content(f_resp.content, "7290027600007")
+                    stores.extend(parsed)
+                    logging.info(f"שופרסל: נפרקו {len(parsed)} סניפים")
+        else:
+            logging.warning(f"שופרסל: HTTP {r.status_code}")
     except Exception as e:
-        logging.warning(f"שופרסל: {e}")
-    return []
+        logging.error(f"שופרסל שגיאה: {e}")
+    return stores
 
-def fetch_cerberus_urls(portal_url: str, auth):
+def fetch_cerberus_stores(chain_id: str, cfg: dict):
+    stores = []
+    session = requests.Session()
+    session.headers.update(HEADERS)
+    session.auth = cfg["auth"]
+    portal_url = cfg["portal_url"]
+    
     try:
-        r = requests.get(portal_url, headers=HEADERS, auth=auth, timeout=20)
+        r = session.get(portal_url, timeout=25)
         if r.status_code == 200:
-            matches = re.findall(r'href=[\'"]([^\'"]*(?:download\?file=Stores|Stores)[^\'"]*)[\'"]', r.text, re.IGNORECASE)
-            return [m if m.startswith("http") else f"https://url.publishedprices.co.il{m}" for m in set(matches)]
+            # מציאת כל שמות הקבצים שכוללים Stores
+            matches = re.findall(r'href=[\'"]([^\'"]*Stores[^\'"]*)[\'"]', r.text, re.IGNORECASE)
+            
+            # אם לא נמצאו קישורים ישירים, חיפוש שמות קבצים בטבלה
+            if not matches:
+                file_names = re.findall(r'(Stores(?:Full)?\d*-\d*-\d*\.gz|\.xml)', r.text, re.IGNORECASE)
+                matches = [f"/file/d/{cfg['auth'].username}/download?file={fn}" for fn in file_names]
+
+            unique_matches = set(matches)
+            logging.info(f"{cfg['name']}: אותרו {len(unique_matches)} קובצי סניפים בפורטל")
+
+            for m in unique_matches:
+                full_url = m if m.startswith("http") else f"https://url.publishedprices.co.il{m}"
+                logging.info(f"{cfg['name']}: מוריד {full_url[:80]}...")
+                f_resp = session.get(full_url, timeout=35)
+                if f_resp.status_code == 200:
+                    parsed = parse_stores_xml_content(f_resp.content, chain_id)
+                    stores.extend(parsed)
+                    logging.info(f"{cfg['name']}: נפרקו {len(parsed)} סניפי אמת מהקובץ")
+                    if parsed:
+                        break  # קובץ StoresFull אחד מספיק לכל הרשת
+        else:
+            logging.warning(f"{cfg['name']}: פורטל החזיר HTTP {r.status_code}")
     except Exception as e:
-        logging.warning(f"Cerberus ({portal_url}): {e}")
-    return []
+        logging.error(f"{cfg['name']} תקלה: {e}")
+    return stores
 
 def main():
     if not DATABASE_URL:
-        logging.error("DATABASE_URL is missing.")
+        logging.error("DATABASE_URL חסר.")
         return
 
-    logging.info("מתחבר למסד הנתונים...")
+    logging.info("מתחבר למסד הנתונים ב-Supabase...")
     conn = psycopg2.connect(DATABASE_URL)
     
     with conn.cursor() as cur:
@@ -206,18 +243,18 @@ def main():
     all_official_stores = []
 
     # 1. שופרסל
-    for url in fetch_shufersal_urls():
-        all_official_stores.extend(parse_stores_xml(url, None, "7290027600007"))
+    shuf_stores = fetch_shufersal_stores()
+    all_official_stores.extend(shuf_stores)
 
-    # 2. 7 רשתות Cerberus
+    # 2. רשתות Cerberus
     for c_id, cfg in CHAIN_CONFIGS.items():
         if c_id == "7290027600007":
             continue
-        for url in fetch_cerberus_urls(cfg["portal_url"], cfg["auth"]):
-            all_official_stores.extend(parse_stores_xml(url, cfg["auth"], c_id))
+        c_stores = fetch_cerberus_stores(c_id, cfg)
+        all_official_stores.extend(c_stores)
 
     unique_stores = list({(s[0], s[1]): s for s in all_official_stores}.values())
-    logging.info(f"🎯 סה\"כ אותרו {len(unique_stores)} סניפי אמת פעילים מהקבצים הרשמיים!")
+    logging.info(f"🎯 סה\"כ חולצו {len(unique_stores)} סניפי אמת פעילים ישירות משרתי הרשתות!")
 
     if unique_stores:
         with conn.cursor() as cur:
