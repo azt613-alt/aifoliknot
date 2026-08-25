@@ -1,6 +1,5 @@
 import os
 import psycopg2
-from psycopg2.extras import RealDictCursor
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -20,8 +19,8 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 
 class BasketQuery(BaseModel):
     items: list[str]
-    user_lat: float
-    user_lon: float
+    user_lat: float = 32.9790
+    user_lon: float = 35.5480
     max_radius: float = 60.0
 
 @app.get("/")
@@ -30,7 +29,6 @@ def health_check():
 
 @app.get("/api/debug")
 def debug_status():
-    """בדיקת סטטוס מסד הנתונים וכמות הרשומות"""
     if not DATABASE_URL:
         return {"status": "error", "message": "DATABASE_URL is missing"}
     try:
@@ -73,10 +71,6 @@ def live_compare(query: BasketQuery):
         conn = psycopg2.connect(DATABASE_URL)
         cur = conn.cursor()
 
-        # ודא קיום תוסף חיפוש
-        cur.execute("CREATE EXTENSION IF NOT EXISTS pg_trgm;")
-        conn.commit()
-
         cur.execute("""
             SELECT s.chain_id, s.store_id, c.chain_name, s.store_name, s.address, s.lat, s.lon
             FROM stores s
@@ -101,18 +95,38 @@ def live_compare(query: BasketQuery):
                 if not clean_item:
                     continue
 
-                # חיפוש חכם וגמיש
-                cur.execute("""
+                words = [w for w in clean_item.split() if len(w) > 1]
+                if not words:
+                    words = [clean_item]
+
+                # חיפוש מדויק לפי מילות מפתח
+                where_clauses = ["sp.chain_id = %s", "sp.store_id = %s"]
+                params = [chain_id, store_id]
+                for word in words:
+                    where_clauses.append("p.item_name ILIKE %s")
+                    params.append(f"%{word}%")
+
+                cur.execute(f"""
                     SELECT p.item_code, p.item_name, sp.item_price
                     FROM products p
                     JOIN store_prices sp ON p.item_code = sp.item_code
-                    WHERE sp.chain_id = %s AND sp.store_id = %s
-                      AND (p.item_name ILIKE %s OR p.item_name % %s)
-                    ORDER BY (p.item_name ILIKE %s) DESC, similarity(p.item_name, %s) DESC
+                    WHERE {' AND '.join(where_clauses)}
                     LIMIT 1;
-                """, (chain_id, store_id, f"%{clean_item}%", clean_item, f"%{clean_item}%", clean_item))
-                
+                """, tuple(params))
+
                 match = cur.fetchone()
+
+                # ניסיון חיפוש גמיש על המילה הראשונה אם לא נמצאה התאמה מלאה
+                if not match and len(words) > 1:
+                    cur.execute("""
+                        SELECT p.item_code, p.item_name, sp.item_price
+                        FROM products p
+                        JOIN store_prices sp ON p.item_code = sp.item_code
+                        WHERE sp.chain_id = %s AND sp.store_id = %s AND p.item_name ILIKE %s
+                        LIMIT 1;
+                    """, (chain_id, store_id, f"%{words[0]}%"))
+                    match = cur.fetchone()
+
                 if match:
                     price = float(match[2])
                     total_price += price
@@ -150,4 +164,4 @@ def live_compare(query: BasketQuery):
         return {"status": "success", "results": results}
 
     except Exception as e:
-        return {"status": "error", "message": f"Database query failed: {str(e)}"}
+        return {"status": "error", "message": f"Query error: {str(e)}"}
