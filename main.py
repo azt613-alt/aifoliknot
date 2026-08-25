@@ -1,9 +1,9 @@
-from live_scraper import main as run_scraper_task
 import os
 import psycopg2
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from live_scraper import main as run_scraper_task
 
 app = FastAPI(title="AIפה לקנות API")
 
@@ -26,6 +26,11 @@ class BasketQuery(BaseModel):
 @app.get("/")
 def health_check():
     return {"status": "online", "service": "AIפה לקנות API"}
+
+@app.get("/api/run-scraper")
+def trigger_scraper():
+    run_scraper_task()
+    return {"status": "success", "message": "Scraper completed successfully"}
 
 @app.post("/api/live-compare")
 def live_compare(query: BasketQuery):
@@ -95,7 +100,3 @@ def live_compare(query: BasketQuery):
     conn.close()
     results.sort(key=lambda x: x["total_price"])
     return {"status": "success", "results": results}
-    @app.get("/api/run-scraper")
-def trigger_scraper():
-    run_scraper_task()
-    return {"status": "success", "message": "Scraper completed successfully"}
