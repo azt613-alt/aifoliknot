@@ -26,50 +26,43 @@ SUPPORTED_CHAINS = [
 CHAIN_CONFIGS = {
     "7290027600007": {
         "name": "שופרסל",
-        "type": "shufersal",
-        "url": "http://prices.shufersal.co.il/FileObject/UpdateCategory?catID=2&sort=Time&sortdir=DESC",
+        "prices_url": "http://prices.shufersal.co.il/FileObject/UpdateCategory?catID=2&sort=Time&sortdir=DESC",
+        "stores_url": "http://prices.shufersal.co.il/FileObject/UpdateCategory?catID=5&sort=Time&sortdir=DESC",
         "auth": None
     },
     "7290058140886": {
         "name": "רמי לוי",
-        "type": "cerberus",
-        "url": "https://url.publishedprices.co.il/file/d/RamiLevi",
+        "portal_url": "https://url.publishedprices.co.il/file/d/RamiLevi",
         "auth": HTTPBasicAuth("RamiLevi", "")
     },
     "7290803800003": {
         "name": "יוחננוף",
-        "type": "cerberus",
-        "url": "https://url.publishedprices.co.il/file/d/yohananof",
+        "portal_url": "https://url.publishedprices.co.il/file/d/yohananof",
         "auth": HTTPBasicAuth("yohananof", "")
     },
     "7290103152017": {
         "name": "אושר עד",
-        "type": "cerberus",
-        "url": "https://url.publishedprices.co.il/file/d/OsherAd",
+        "portal_url": "https://url.publishedprices.co.il/file/d/OsherAd",
         "auth": HTTPBasicAuth("OsherAd", "")
     },
     "7290696200003": {
         "name": "ויקטורי",
-        "type": "cerberus",
-        "url": "https://url.publishedprices.co.il/file/d/Victory",
+        "portal_url": "https://url.publishedprices.co.il/file/d/Victory",
         "auth": HTTPBasicAuth("Victory", "")
     },
     "7290725900003": {
         "name": "קרפור",
-        "type": "cerberus",
-        "url": "https://url.publishedprices.co.il/file/d/Mega",
+        "portal_url": "https://url.publishedprices.co.il/file/d/Mega",
         "auth": HTTPBasicAuth("Mega", "")
     },
     "7290873255550": {
         "name": "טיב טעם",
-        "type": "cerberus",
-        "url": "https://url.publishedprices.co.il/file/d/TivTaam",
+        "portal_url": "https://url.publishedprices.co.il/file/d/TivTaam",
         "auth": HTTPBasicAuth("TivTaam", "")
     },
     "7290661400001": {
         "name": "מחסני השוק",
-        "type": "cerberus",
-        "url": "https://url.publishedprices.co.il/file/d/Coop",
+        "portal_url": "https://url.publishedprices.co.il/file/d/Coop",
         "auth": HTTPBasicAuth("Coop", "")
     }
 }
@@ -79,115 +72,161 @@ HEADERS = {
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
 }
 
-def get_real_stores_network():
-    """רשימת סניפי אמת אמיתיים ומדויקים של 8 הרשתות ברחבי ישראל (ללא סניפים מומצאים)"""
-    return [
-        # --- רמי לוי שיווק השקמה (סניפי אמת) ---
-        ("7290058140886", "RL001", "רמי לוי חצור הגלילית / מחניים", "אזור תעשייה חצור הגלילית (צומת מחניים)", 32.9790, 35.5520),
-        ("7290058140886", "RL002", "רמי לוי קריית שמונה", "מתחם BIG, שד' תל חי, קריית שמונה", 33.2180, 35.5720),
-        ("7290058140886", "RL003", "רמי לוי טבריה", "מתחם ביג דניה, יהודה הלוי 1, טבריה", 32.7880, 35.5250),
-        ("7290058140886", "RL004", "רמי לוי כרמיאל", "החרושת 25, אזור תעשייה, כרמיאל", 32.9230, 35.3120),
-        ("7290058140886", "RL005", "רמי לוי עפולה", "מתחם ביג, קהילת ציון 50, עפולה", 32.6110, 35.2950),
-        ("7290058140886", "RL006", "רמי לוי נהריה", "האיריס 2, מתחם סטאר סנטר, נהריה", 33.0070, 35.1010),
-        ("7290058140886", "RL007", "רמי לוי עכו", "מתחם שער עכו, דרך הארבעה, עכו", 32.9310, 35.0870),
-        ("7290058140886", "RL008", "רמי לוי חיפה (נשר)", "התעשייה 2, תל חנן, נשר", 32.7760, 35.0380),
-        ("7290058140886", "RL009", "רמי לוי חיפה (קסטרא)", "פלימן 8, מתחם קסטרא, חיפה", 32.7840, 34.9650),
-        ("7290058140886", "RL010", "רמי לוי קריות (קרית חיים)", "חלוצי התעשייה 114, חיפה", 32.8250, 35.0680),
-        ("7290058140886", "RL011", "רמי לוי נתניה", "מתחם יכין סנטר, גיבורי ישראל 7, נתניה", 32.2780, 34.8620),
-        ("7290058140886", "RL012", "רמי לוי כפר סבא", "מתחם ביג, עתיר ידע 1, כפר סבא", 32.1790, 34.9290),
-        ("7290058140886", "RL013", "רמי לוי רעננה", "התעשייה 3, רעננה", 32.1930, 34.8780),
-        ("7290058140886", "RL014", "רמי לוי פתח תקווה", "היצירה 6, קריית אריה, פתח תקווה", 32.0980, 34.8650),
-        ("7290058140886", "RL015", "רמי לוי תל אביב (הירקון)", "מבצע קדש 64, מול קניון איילון, בני ברק", 32.1030, 34.8260),
-        ("7290058140886", "RL016", "רמי לוי ראשון לציון", "אזורי חן, מתחם G2, ראשון לציון", 31.9860, 34.7640),
-        ("7290058140886", "RL017", "רמי לוי מודיעין", "שדרות המקצועות 14, ישפרו סנטר, מודיעין", 31.8880, 34.9650),
-        ("7290058140886", "RL018", "רמי לוי ירושלים (תלפיות)", "האומן 15, תלפיות, ירושלים", 31.7510, 35.2150),
-        ("7290058140886", "RL019", "רמי לוי ירושלים (גבעת שאול)", "כנפי נשרים 26, גבעת שאול, ירושלים", 31.7890, 35.1860),
-        ("7290058140886", "RL020", "רמי לוי אשדוד", "מתחם סטאר סנטר, ז'בוטינסקי 43, אשדוד", 31.8120, 34.6610),
-        ("7290058140886", "RL021", "רמי לוי באר שבע", "דרך חברון 62, באר שבע", 31.2380, 34.7990),
+# מיפוי קואורדינטות ליישובים וערים בישראל לפענוח גיאוגרפי של הכתובות הרשמיות
+GEO_REGISTRY = {
+    "ראש פינה": (32.9691, 35.5422), "חצור הגלילית": (32.9790, 35.5480), "מחניים": (32.9860, 35.5680),
+    "צפת": (32.9646, 35.4960), "קריית שמונה": (33.2073, 35.5721), "קרית שמונה": (33.2073, 35.5721),
+    "קצרין": (32.9920, 35.6880), "טבריה": (32.7940, 35.5312), "כרמיאל": (32.9199, 35.2901),
+    "מעלות תרשיחא": (33.0160, 35.2750), "מעלות": (33.0160, 35.2750), "נהריה": (33.0059, 35.0941),
+    "שלומי": (33.0730, 35.1430), "עכו": (32.9278, 35.0818), "עפולה": (32.6078, 35.2897),
+    "נוף הגליל": (32.7066, 35.3035), "נצרת עילית": (32.7066, 35.3035), "נצרת": (32.6996, 35.3035),
+    "מגדל העמק": (32.6730, 35.2400), "בית שאן": (32.4970, 35.4980), "יקנעם": (32.6590, 35.0810),
+    "יקנעם עילית": (32.6590, 35.0810), "חיפה": (32.7940, 34.9896), "נשר": (32.7750, 35.0350),
+    "טירת כרמל": (32.7600, 34.9700), "קרית אתא": (32.8020, 35.1050), "קריית אתא": (32.8020, 35.1050),
+    "קרית ביאליק": (32.8320, 35.0800), "קריית ביאליק": (32.8320, 35.0800), "קרית מוצקין": (32.8380, 35.0780),
+    "קריית מוצקין": (32.8380, 35.0780), "קרית ים": (32.8450, 35.0680), "קריית ים": (32.8450, 35.0680),
+    "קרית טבעון": (32.7150, 35.1250), "עתלית": (32.6880, 34.9350), "חדרה": (32.4340, 34.9190),
+    "אור עקיבא": (32.5060, 34.9180), "זכרון יעקב": (32.5730, 34.9530), "בנימינה": (32.5180, 34.9500),
+    "פרדס חנה כרכור": (32.4710, 34.9720), "פרדס חנה": (32.4710, 34.9720), "חריש": (32.4600, 35.0400),
+    "נתניה": (32.3215, 34.8532), "כפר יונה": (32.3160, 34.9350), "אבן יהודה": (32.2700, 34.8900),
+    "תל מונד": (32.2550, 34.9180), "קדימה צורן": (32.2780, 34.9150), "כפר סבא": (32.1844, 34.8708),
+    "רעננה": (32.1840, 34.8710), "הוד השרון": (32.1550, 34.8880), "הרצליה": (32.1663, 34.8433),
+    "רמת השרון": (32.1480, 34.8390), "תל אביב - יפו": (32.0853, 34.7818), "תל אביב": (32.0853, 34.7818),
+    "ת\"א": (32.0853, 34.7818), "רמת גן": (32.0684, 34.8248), "גבעתיים": (32.0720, 34.8100),
+    "בני ברק": (32.0944, 34.8322), "פתח תקווה": (32.0840, 34.8878), "גבעת שמואל": (32.0780, 34.8480),
+    "קרית אונו": (32.0630, 34.8580), "גני תקווה": (32.0600, 34.8700), "יהוד": (32.0330, 34.8900),
+    "אור יהודה": (32.0290, 34.8550), "ראש העין": (32.0950, 34.9560), "חולון": (32.0158, 34.7874),
+    "בת ים": (32.0200, 34.7500), "ראשון לציון": (31.9730, 34.7925), "ראשל\"צ": (31.9730, 34.7925),
+    "נס ציונה": (31.9300, 34.7990), "רחובות": (31.8928, 34.8113), "באר יעקב": (31.9380, 34.8350),
+    "רמלה": (31.9270, 34.8640), "לוד": (31.9520, 34.8970), "שוהם": (31.9980, 34.9450),
+    "מודיעין": (31.8903, 35.0104), "מודיעין מכבים רעות": (31.8903, 35.0104), "מודיעין עילית": (31.9330, 35.0400),
+    "ירושלים": (31.7683, 35.2137), "מבשרת ציון": (31.7997, 35.1542), "מעלה אדומים": (31.7921, 35.2974),
+    "בית שמש": (31.7470, 34.9881), "ביתר עילית": (31.6980, 35.1150), "יבנה": (31.8767, 34.7408),
+    "גדרה": (31.8130, 34.7780), "גן יבנה": (31.7880, 34.7150), "קרית עקרון": (31.8600, 34.8200),
+    "אשדוד": (31.8044, 34.6553), "אשקלון": (31.6688, 34.5743), "קרית גת": (31.6100, 34.7640),
+    "קרית מלאכי": (31.7280, 34.7450), "שדרות": (31.5215, 34.5959), "נתיבות": (31.4200, 34.5800),
+    "אופקים": (31.3140, 34.6200), "באר שבע": (31.2529, 34.7915), "דימונה": (31.0700, 35.0300),
+    "ערד": (31.2610, 35.2140), "ירוחם": (30.9880, 34.9200), "מצפה רמון": (30.6100, 34.8000),
+    "אילת": (29.5577, 34.9519)
+}
 
-        # --- שופרסל (דיל / שלי / אקספרס - סניפי אמת) ---
-        ("7290027600007", "SD001", "שופרסל דיל חצור הגלילית", "קניון הגליל העליון, כביש 90, חצור הגלילית", 32.9810, 35.5490),
-        ("7290027600007", "SS001", "שופרסל שלי ראש פינה", "מרכז מושבה, דרך הגליל, ראש פינה", 32.9691, 35.5422),
-        ("7290027600007", "SD002", "שופרסל דיל צפת", "שד' וייצמן 14, מתחם מסחרי, צפת", 32.9630, 35.4950),
-        ("7290027600007", "SD003", "שופרסל דיל קריית שמונה", "מתחם ביג, רחוב הירדן, קריית שמונה", 33.2090, 35.5710),
-        ("7290027600007", "SD004", "שופרסל דיל קצרין", "קניון לב קצרין, קצרין", 32.9930, 35.6890),
-        ("7290027600007", "SD005", "שופרסל דיל טבריה", "מתחם ביג, שד' אלחדיף, טבריה", 32.7930, 35.5340),
-        ("7290027600007", "SD006", "שופרסל דיל כרמיאל", "החרושת 12, מתחם חוצות כרמיאל", 32.9210, 35.3080),
-        ("7290027600007", "SD007", "שופרסל דיל נהריה", "מתחם ארנה, לוחמי הגטאות 1, נהריה", 33.0040, 35.0960),
-        ("7290027600007", "SD008", "שופרסל דיל עפולה", "קניון העמקים, שד' ירושלים, עפולה", 32.6080, 35.2910),
-        ("7290027600007", "SD009", "שופרסל דיל חיפה (גרנד קניון)", "שמחה גולן 54, גרנד קניון, חיפה", 32.7890, 35.0070),
-        ("7290027600007", "SD010", "שופרסל דיל קריון (קרית ביאליק)", "דרך עכו 192, הקריון, קרית ביאליק", 32.8420, 35.0830),
-        ("7290027600007", "SD011", "שופרסל דיל נתניה", "מתחם פולג, שד' גיבורי ישראל 5, נתניה", 32.2790, 34.8590),
-        ("7290027600007", "SD012", "שופרסל דיל תל אביב (יגאל אלון)", "יגאל אלון 86, תל אביב", 32.0690, 34.7930),
-        ("7290027600007", "SD013", "שופרסל דיל ראשון לציון", "מתחם שבעת הכוכבים, שד' משה דיין, ראשון לציון", 31.9790, 34.7710),
-        ("7290027600007", "SD014", "שופרסל דיל ירושלים (תלפיות)", "פייר קניג 26, תלפיות, ירושלים", 31.7520, 35.2130),
-        ("7290027600007", "SD015", "שופרסל דיל באר שבע (שדרות השדרה)", "שד' אליהו נאוי 22, באר שבע", 31.2510, 34.8020),
+def resolve_coords_from_address(store_name: str, address: str, city: str):
+    """מאתר קואורדינטות GPS על בסיס העיר ושם הסניף מהקובץ הרשמי"""
+    combined_text = f"{city} {address} {store_name}".strip()
+    
+    # 1. התאמה לפי שדה העיר הרשמי
+    if city and city in GEO_REGISTRY:
+        return GEO_REGISTRY[city]
 
-        # --- אושר עד (סניפי ענק) ---
-        ("7290103152017", "OA001", "אושר עד צפת", "מתחם רזים, אזור תעשייה צפת", 32.9550, 35.5030),
-        ("7290103152017", "OA002", "אושר עד כרמיאל", "מתחם מיי סנטר, החרושת 9, כרמיאל", 32.9200, 35.3140),
-        ("7290103152017", "OA003", "אושר עד נוף הגליל", "מתחם דודג' סנטר, שד' מעלה יצחק, נוף הגליל", 32.7120, 35.3160),
-        ("7290103152017", "OA004", "אושר עד חיפה (חוצות המפרץ)", "צומת וולקן, חוצות המפרץ, חיפה", 32.8090, 35.0590),
-        ("7290103152017", "OA005", "אושר עד חדרה", "מתחם MIX, צה\"ל 35, חדרה", 32.4380, 34.9280),
-        ("7290103152017", "OA006", "אושר עד נתניה", "האורזים 4, אזור תעשייה ישן, נתניה", 32.3320, 34.8690),
-        ("7290103152017", "OA007", "אושר עד כפר סבא", "התעש 14, אזור תעשייה, כפר סבא", 32.1760, 34.9180),
-        ("7290103152017", "OA008", "אושר עד פתח תקווה", "מתחם דן טאון, ז'בוטינסקי 94, פתח תקווה", 32.0910, 34.8690),
-        ("7290103152017", "OA009", "אושר עד בני ברק", "הירקון 5, מול קניון איילון, בני ברק", 32.1010, 34.8250),
-        ("7290103152017", "OA010", "אושר עד תל אביב", "החרש 8, מתחם יד חרוצים, תל אביב", 32.0590, 34.7860),
-        ("7290103152017", "OA011", "אושר עד ראשון לציון", "הלח\"י 2, אזור תעשייה חדש, ראשון לציון", 31.9890, 34.7680),
-        ("7290103152017", "OA012", "אושר עד ירושלים (גבעת שאול)", "בית הדפוס 11, גבעת שאול, ירושלים", 31.7870, 35.1890),
-        ("7290103152017", "OA013", "אושר עד אשדוד", "מתחם פאוור סנטר, האורגים 7, אשדוד", 31.8080, 34.6680),
-        ("7290103152017", "OA014", "אושר עד באר שבע", "מתחם ביג, חיל ההנדסה 1, באר שבע", 31.2480, 34.8090),
+    # 2. התאמה לפי טקסט משולב
+    for place, (lat, lon) in GEO_REGISTRY.items():
+        if place in combined_text:
+            return lat, lon
 
-        # --- יוחננוף (סניפי ענק) ---
-        ("7290803800003", "Y001", "יוחננוף טבריה", "מתחם ביג פוריה, כביש 768, טבריה", 32.7680, 35.5390),
-        ("7290803800003", "Y002", "יוחננוף קריית שמונה", "מתחם ביג, שד' תל חי, קריית שמונה", 33.2150, 35.5710),
-        ("7290803800003", "Y003", "יוחננוף עפולה", "מתחם G, שד' יצחק רבין, עפולה", 32.6140, 35.2980),
-        ("7290803800003", "Y004", "יוחננוף חיפה (נשר)", "דרך בר יהודה 52, נשר", 32.7820, 35.0310),
-        ("7290803800003", "Y005", "יוחננוף חדרה", "מתחם מול החוף ויליג', שכטרמן 12, חדרה", 32.4410, 34.9080),
-        ("7290803800003", "Y006", "יוחננוף נתניה", "המחקר 2, מתחם פולג, נתניה", 32.2760, 34.8580),
-        ("7290803800003", "Y007", "יוחננוף כפר סבא", "מתחם אושילנד, עתיר ידע 4, כפר סבא", 32.1740, 34.9280),
-        ("7290803800003", "Y008", "יוחננוף פתח תקווה", "מתחם ירקונים, צומת ירקון, פתח תקווה", 32.1120, 34.9010),
-        ("7290803800003", "Y009", "יוחננוף ראשון לציון", "הכשרת היישוב 1, אזור תעשייה ישן, ראשון לציון", 31.9740, 34.7890),
-        ("7290803800003", "Y010", "יוחננוף רחובות", "מוטי קינד 1, אזור תעשייה רחובות", 31.9050, 34.8080),
-        ("7290803800003", "Y011", "יוחננוף ירושלים (תלפיות)", "הסדנא 8, תלפיות, ירושלים", 31.7530, 35.2160),
-        ("7290803800003", "Y012", "יוחננוף אשדוד", "מתחם סטאר סנטר, ז'בוטינסקי, אשדוד", 31.8150, 34.6580),
-        ("7290803800003", "Y013", "יוחננוף באר שבע", "מתחם ONE, נפחא 25, באר שבע", 31.2460, 34.7890),
+    # ברירת מחדל מרכז הארץ אם המיקום לא זוהה
+    return 32.0853, 34.7818
 
-        # --- ויקטורי (סניפי אמת) ---
-        ("7290696200003", "V001", "ויקטורי חצור הגלילית", "מרכז קניות השלום, חצור הגלילית", 32.9830, 35.5460),
-        ("7290696200003", "V002", "ויקטורי כרמיאל", "מתחם גורדון, החרושת 31, כרמיאל", 32.9240, 35.3160),
-        ("7290696200003", "V003", "ויקטורי חיפה", "מתחם חוצות המפרץ, חיפה", 32.8120, 35.0620),
-        ("7290696200003", "V004", "ויקטורי חדרה", "קניון לב חדרה, רוטשילד 40, חדרה", 32.4360, 34.9210),
-        ("7290696200003", "V005", "ויקטורי נתניה", "מתחם רוגובין פולג, נתניה", 32.2740, 34.8560),
-        ("7290696200003", "V006", "ויקטורי כפר סבא", "מתחם קניון כפר סבא הירוקה, רפפורט 3", 32.1890, 34.8820),
-        ("7290696200003", "V007", "ויקטורי תל אביב (לינקולן)", "לינקולן 16, תל אביב", 32.0680, 34.7810),
-        ("7290696200003", "V008", "ויקטורי ראשון לציון", "הילל וסילבסקי 2, ראשון לציון", 31.9680, 34.7920),
+def parse_stores_xml_stream(file_url: str, auth, chain_id: str):
+    """מוריד ומפענח קובץ Stores / StoresFull רשמי ישירות מהזרם"""
+    stores = []
+    try:
+        logging.info(f"מוריד קובץ סניפים רשמי: {file_url[:80]}...")
+        resp = requests.get(file_url, headers=HEADERS, auth=auth, stream=True, timeout=40)
+        if resp.status_code != 200:
+            logging.warning(f"שגיאה בהורדת קובץ סניפים: HTTP {resp.status_code}")
+            return stores
 
-        # --- קרפור / מגה (סניפי אמת) ---
-        ("7290725900003", "CF001", "קרפור היפר עפולה", "מתחם אמריกัน סיטי, עפולה", 32.6150, 35.2920),
-        ("7290725900003", "CF002", "קרפור מרקט כרמיאל", "קניון לב כרמיאל, כרמיאל", 32.9180, 35.2950),
-        ("7290725900003", "CF003", "קרפור סיטי חיפה (מרכז הכרמל)", "הנשיא 130, חיפה", 32.8050, 34.9850),
-        ("7290725900003", "CF004", "קרפור היפר נתניה", "מתחם אלכסנדר יכין, פולג, נתניה", 32.2770, 34.8610),
-        ("7290725900003", "CF005", "קרפור היפר רעננה", "התעשייה 11, רעננה", 32.1950, 34.8760),
-        ("7290725900003", "CF006", "קרפור היפר תל אביב (לה גווארדיה)", "לה גווארדיה 76, תל אביב", 32.0540, 34.7910),
-        ("7290725900003", "CF007", "קרפור היפר ראשון לציון", "מתחם ישפרו, ילדי טהרן 5, ראשון לציון", 31.9880, 34.7730),
+        is_gz = file_url.endswith(".gz") or resp.content[:2] == b'\x1f\x8b'
+        file_obj = gzip.GzipFile(fileobj=io.BytesIO(resp.content)) if is_gz else io.BytesIO(resp.content)
 
-        # --- טיב טעם (סניפי אמת) ---
-        ("7290873255550", "TT001", "טיב טעם חיפה (חוצות המפרץ)", "מתחם חוצות המפרץ, צומת וולקן, חיפה", 32.8110, 35.0610),
-        ("7290873255550", "TT002", "טיב טעם כרמיאל", "החרושת 15, אזור תעשייה, כרמיאל", 32.9220, 35.3100),
-        ("7290873255550", "TT003", "טיב טעם נתניה", "שד' גיבורי ישראל 26, פולג, נתניה", 32.2750, 34.8570),
-        ("7290873255550", "TT004", "טיב טעם כפר סבא", "עתיר ידע 1, מתחם אושילנד, כפר סבא", 32.1730, 34.9270),
-        ("7290873255550", "TT005", "טיב טעם תל אביב (דיזנגוף)", "דיזנגוף 161, תל אביב", 32.0860, 34.7730),
-        ("7290873255550", "TT006", "טיב טעם ראשון לציון", "משה בקר 13, אזור תעשייה ישן, ראשון לציון", 31.9750, 34.7930),
+        context = etree.iterparse(file_obj, events=('end',), tag=['Store', 'STORE', 'Branch', 'BRANCH'])
+        for event, elem in context:
+            store_id_el = elem.find('StoreId') or elem.find('STOREID') or elem.find('storeid')
+            store_name_el = elem.find('StoreName') or elem.find('STORENAME') or elem.find('storename')
+            address_el = elem.find('Address') or elem.find('ADDRESS') or elem.find('address')
+            city_el = elem.find('City') or elem.find('CITY') or elem.find('city')
 
-        # --- מחסני השוק (סניפי אמת) ---
-        ("7290661400001", "MS001", "מחסני השוק צפת", "שד' ירושלים 45, צפת", 32.9650, 35.4980),
-        ("7290661400001", "MS002", "מחסני השוק טבריה", "הבנים 1, מרכז העיר, טבריה", 32.7910, 35.5320),
-        ("7290661400001", "MS003", "מחסני השוק נהריה", "מתחם רכבת נהריה, שד' הגעתון 1", 33.0060, 35.0970),
-        ("7290661400001", "MS004", "מחסני השוק עכו", "יהושפט 20, עכו", 32.9280, 35.0830),
-        ("7290661400001", "MS005", "מחסני השוק באר שבע (נווה נוי)", "שדרות שז\"ר 33, באר שבע", 31.2390, 34.7920)
-    ]
+            if store_id_el is not None and store_id_el.text:
+                store_id = str(store_id_el.text).strip()
+                store_name = str(store_name_el.text).strip() if store_name_el is not None and store_name_el.text else f"סניף {store_id}"
+                address = str(address_el.text).strip() if address_el is not None and address_el.text else ""
+                city = str(city_el.text).strip() if city_el is not None and city_el.text else ""
+
+                lat, lon = resolve_coords_from_address(store_name, address, city)
+                full_address = f"{address}, {city}".strip(", ") if city else address
+                stores.append((chain_id, store_id, store_name, full_address, lat, lon))
+
+            elem.clear()
+            while elem.getprevious() is not None:
+                del elem.getparent()[0]
+        del context
+
+    except Exception as e:
+        logging.error(f"תקלה בפענוח קובץ סניפים {file_url}: {e}")
+
+    return stores
+
+def fetch_shufersal_stores_file():
+    try:
+        url = CHAIN_CONFIGS["7290027600007"]["stores_url"]
+        r = requests.get(url, headers=HEADERS, timeout=20)
+        if r.status_code == 200:
+            matches = re.findall(r'href=[\'"]([^\'"]*Stores[^\'"]*\.gz)[\'"]', r.text, re.IGNORECASE)
+            if matches:
+                return matches[0]
+    except Exception as e:
+        logging.warning(f"שופרסל: לא אותר קובץ StoresFull ({e})")
+    return None
+
+def fetch_cerberus_stores_file(portal_url: str, auth):
+    try:
+        r = requests.get(portal_url, headers=HEADERS, auth=auth, timeout=25)
+        if r.status_code == 200:
+            matches = re.findall(r'href=[\'"]([^\'"]*Stores[^\'"]*(?:\.gz|\.xml))[\'"]', r.text, re.IGNORECASE)
+            if matches:
+                href = matches[0]
+                return href if href.startswith("http") else f"https://url.publishedprices.co.il{href}"
+    except Exception as e:
+        logging.warning(f"Cerberus ({portal_url}): תקלה בשליפת קובץ סניפים ({e})")
+    return None
+
+def sync_official_stores(conn):
+    """מושך ומעדכן אוטומטית את רשימת כל הסניפים הפעילים בפועל מקובצי StoresFull"""
+    logging.info("🏢 מתחיל סנכרון אוטומטי של סניפי אמת מקובצי StoresFull הממשלתיים...")
+    all_official_stores = []
+
+    # 1. שופרסל
+    shuf_stores_url = fetch_shufersal_stores_file()
+    if shuf_stores_url:
+        stores = parse_stores_xml_stream(shuf_stores_url, None, "7290027600007")
+        all_official_stores.extend(stores)
+
+    # 2. רשתות Cerberus (רמי לוי, יוחננוף, אושר עד, ויקטורי, קרפור, טיב טעם, מחסני השוק)
+    for c_id, cfg in CHAIN_CONFIGS.items():
+        if c_id == "7290027600007":
+            continue
+        stores_url = fetch_cerberus_stores_file(cfg["portal_url"], cfg["auth"])
+        if stores_url:
+            stores = parse_stores_xml_stream(stores_url, cfg["auth"], c_id)
+            all_official_stores.extend(stores)
+
+    if all_official_stores:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM stores;")
+            query = """
+                INSERT INTO stores (chain_id, store_id, store_name, address, lat, lon)
+                VALUES (%s, %s, %s, %s, %s, %s)
+                ON CONFLICT (chain_id, store_id) DO UPDATE SET
+                    store_name = EXCLUDED.store_name,
+                    address = EXCLUDED.address,
+                    lat = EXCLUDED.lat,
+                    lon = EXCLUDED.lon;
+            """
+            execute_batch(cur, query, all_official_stores, page_size=1000)
+            conn.commit()
+        logging.info(f"✨ נטענו בהצלחה {len(all_official_stores)} סניפים פעילים אמיתיים ישירות מהרשתות!")
+    else:
+        logging.warning("לא אותרו קבצי StoresFull, שומר על הסניפים הקיימים.")
 
 def build_1000_products_catalog():
     items = []
@@ -379,7 +418,7 @@ def build_1000_products_catalog():
 
     return items[:1000]
 
-def stream_and_parse_xml(gz_url: str, auth, target_codes: set, chain_id: str):
+def stream_and_parse_prices_xml(gz_url: str, auth, target_codes: set, chain_id: str):
     extracted_prices = []
     try:
         logging.info(f"מוריד ומפענח קובץ מחירים חי: {gz_url[:80]}...")
@@ -418,19 +457,19 @@ def stream_and_parse_xml(gz_url: str, auth, target_codes: set, chain_id: str):
 
     return extracted_prices
 
-def get_shufersal_files():
+def get_shufersal_prices_files():
     files = []
     try:
-        url = CHAIN_CONFIGS["7290027600007"]["url"]
+        url = CHAIN_CONFIGS["7290027600007"]["prices_url"]
         r = requests.get(url, headers=HEADERS, timeout=20)
         if r.status_code == 200:
             matches = re.findall(r'href=[\'"]([^\'"]*PriceFull[^\'"]*\.gz)[\'"]', r.text, re.IGNORECASE)
             files.extend(matches)
     except Exception as e:
-        logging.warning(f"שופרסל: תקלה בשליפת רשימת קבצים ({e})")
+        logging.warning(f"שופרסל: תקלה בשליפת רשימת מחירי אמת ({e})")
     return files[:3]
 
-def get_cerberus_files(portal_url: str, auth):
+def get_cerberus_prices_files(portal_url: str, auth):
     files = []
     try:
         r = requests.get(portal_url, headers=HEADERS, auth=auth, timeout=25)
@@ -440,52 +479,28 @@ def get_cerberus_files(portal_url: str, auth):
                 full_url = href if href.startswith("http") else f"https://url.publishedprices.co.il{href}"
                 files.append(full_url)
     except Exception as e:
-        logging.warning(f"Cerberus ({portal_url}): תקלה בשליפת קבצים ({e})")
+        logging.warning(f"Cerberus ({portal_url}): תקלה בשליפת מחירי אמת ({e})")
     return files[:2]
 
-def reset_database_with_real_stores(conn):
+def ensure_chains_and_catalog(conn):
     with conn.cursor() as cur:
-        logging.info("🧹 מאפס ומכין קטלוג 1,000 מוצרים עם סניפי אמת מדויקים בלבד...")
-        cur.execute("DELETE FROM store_prices;")
-        cur.execute("DELETE FROM stores;")
-        cur.execute("DELETE FROM products;")
-        cur.execute("DELETE FROM chains;")
-
-        # 1. הזנת 8 הרשתות
-        execute_batch(cur, "INSERT INTO chains (chain_id, chain_name) VALUES (%s, %s);", SUPPORTED_CHAINS)
-
-        # 2. הזנת סניפי האמת בלבד
-        real_stores = get_real_stores_network()
         execute_batch(cur, """
-            INSERT INTO stores (chain_id, store_id, store_name, address, lat, lon)
-            VALUES (%s, %s, %s, %s, %s, %s);
-        """, real_stores, page_size=1000)
+            INSERT INTO chains (chain_id, chain_name)
+            VALUES (%s, %s)
+            ON CONFLICT (chain_id) DO NOTHING;
+        """, SUPPORTED_CHAINS)
 
-        # 3. הזנת 1,000 מוצרים לקטלוג
         catalog_1000 = build_1000_products_catalog()
         products = [(c, n, m) for c, n, m, _ in catalog_1000]
         execute_batch(cur, """
             INSERT INTO products (item_code, item_name, manufacturer_name)
-            VALUES (%s, %s, %s);
+            VALUES (%s, %s, %s)
+            ON CONFLICT (item_code) DO UPDATE SET
+                item_name = EXCLUDED.item_name,
+                manufacturer_name = EXCLUDED.manufacturer_name;
         """, products, page_size=1000)
 
-        # 4. מחירי בסיס ראשוניים לכל סניפי האמת
-        multipliers = {
-            "7290027600007": 1.05, "7290058140886": 0.94, "7290803800003": 0.95,
-            "7290103152017": 0.92, "7290696200003": 0.98, "7290725900003": 1.02,
-            "7290873255550": 1.10, "7290661400001": 0.96
-        }
-        init_prices = []
-        for chain_id, store_id, _, _, _, _ in real_stores:
-            m = multipliers.get(chain_id, 1.0)
-            for code, _, _, base_p in catalog_1000:
-                init_prices.append((chain_id, store_id, code, round(base_p * m, 2)))
-
-        execute_batch(cur, """
-            INSERT INTO store_prices (chain_id, store_id, item_code, item_price, price_update_date)
-            VALUES (%s, %s, %s, %s, CURRENT_TIMESTAMP);
-        """, init_prices, page_size=10000)
-
+        # יצירת אינדקסים לביצועים מהירים
         cur.execute("CREATE INDEX IF NOT EXISTS idx_store_prices_lookup ON store_prices(item_code, chain_id, store_id);")
         cur.execute("CREATE INDEX IF NOT EXISTS idx_products_name_trgm ON products(item_name);")
         conn.commit()
@@ -513,36 +528,40 @@ def main():
 
     conn = psycopg2.connect(DATABASE_URL)
     
-    # איפוס והזנה של סניפי האמת בלבד ו-1,000 מוצרים
-    reset_database_with_real_stores(conn)
+    # 1. הבטחת קטלוג וטבלאות בסיס
+    ensure_chains_and_catalog(conn)
 
+    # 2. משיכה אוטומטית מלאה של כלל סניפי האמת מכל הרשתות
+    sync_official_stores(conn)
+
+    # 3. משיכת מחירי אמת של 1,000 המוצרים
     catalog_1000 = build_1000_products_catalog()
     target_codes = {c for c, _, _, _ in catalog_1000}
-    logging.info(f"מתחיל סנכרון חי של קובצי XML עבור 1,000 המוצרים בסניפי האמת...")
+    logging.info(f"מתחיל סנכרון חי של קובצי מחירים מול 8 הרשתות עבור 1,000 המוצרים...")
 
     total_synced = 0
 
-    # 1. שופרסל
-    shuf_files = get_shufersal_files()
+    # שופרסל
+    shuf_files = get_shufersal_prices_files()
     for file_url in shuf_files:
-        prices = stream_and_parse_xml(file_url, None, target_codes, "7290027600007")
+        prices = stream_and_parse_prices_xml(file_url, None, target_codes, "7290027600007")
         if prices:
             upsert_live_prices(conn, prices)
             total_synced += len(prices)
 
-    # 2. שאר 7 הרשתות ב-Cerberus
+    # 7 רשתות Cerberus
     cerberus_chains = ["7290058140886", "7290803800003", "7290103152017", "7290696200003", "7290725900003", "7290873255550", "7290661400001"]
     for c_id in cerberus_chains:
         cfg = CHAIN_CONFIGS[c_id]
-        files = get_cerberus_files(cfg["url"], cfg["auth"])
+        files = get_cerberus_prices_files(cfg["portal_url"], cfg["auth"])
         for file_url in files:
-            prices = stream_and_parse_xml(file_url, cfg["auth"], target_codes, c_id)
+            prices = stream_and_parse_prices_xml(file_url, cfg["auth"], target_codes, c_id)
             if prices:
                 upsert_live_prices(conn, prices)
                 total_synced += len(prices)
 
     conn.close()
-    logging.info(f"✨ סנכרון מלא הושלם! כל הסניפים מאומתים ו-{total_synced} מחירי אמת נמשכו מהשרתים.")
+    logging.info(f"✨ סנכרון מלא הושלם! כל הסניפים הפעילים עודכנו ו-{total_synced} מחירי אמת נרשמו.")
 
 if __name__ == "__main__":
     main()
