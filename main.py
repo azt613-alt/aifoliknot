@@ -19,67 +19,106 @@ app.add_middleware(
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
+# מילות עוגן נפוצות לזיהוי תחילת מוצר חדש ברצף מילים ללא פסיקים
+PRODUCT_ANCHORS = {
+    "חלב", "גבינה", "גבינת", "קוטג", "קוטג'", "ביצים", "ביצי", "חמאה", "שמנת", "יוגורט", "מעדן", "שוקו",
+    "לחם", "חלה", "פיתות", "לחמניות", "בייגל", "עוגת", "עוגיות", "וופל", "פירורי", "מצות",
+    "קולה", "קוקה", "ספרייט", "פנטה", "שוופס", "מים", "סודה", "מיץ", "פריגת", "תירוש", "בירה", "יין",
+    "קפה", "תה", "נספרסו", "שוקולד", "במבה", "ביסלי", "תפוציפס", "תפוצ'יפס", "דוריטוס", "בייגלה", "קרקר", "ממרח", "נוטלה",
+    "שמן", "טונה", "טחינה", "חומוס", "סלט", "מלפפונים", "זיתים", "תירס", "עגבניות", "רסק", "קטשופ", "מיונז", "חרדל", "סויה", "רוטב", "מלח", "פלפל", "פפריקה", "כמון", "כורכום", "אבקת",
+    "אורז", "סוכר", "קמח", "פסטה", "ספגטי", "פתיתים", "קוסקוס", "עדשים", "שעועית", "קינואה", "שיבולת", "קורנפלקס", "כריות", "צ'יריוס", "גרנולה",
+    "עגבניה", "מלפפון", "בצל", "תפוח", "בטטה", "גזר", "חסה", "כרוב", "כרובית", "ברוקולי", "קישוא", "חציל", "שום", "פטריות", "נענע", "פטרוזיליה", "כוסברה", "בננה", "תפוז", "לימון", "אבטיח", "מלון", "ענבים", "תות", "אבוקדו", "מנגו",
+    "חזה", "שניצל", "כרעיים", "שוקיים", "כנפיים", "עוף", "פרגיות", "בשר", "בקר", "אנטריקוט", "סינטה", "אסאדו", "סלמון", "אמנון", "דניס", "דג", "טבעול", "המבורגר", "נקניקיות", "פסטרמה", "סלמי", "קבב",
+    "סנפרוסט", "צ'יפס", "בצק", "מלוואח", "ג'חנון", "בורקס", "פיצה", "גלידת", "מגנום", "טילון",
+    "שמפו", "מרכך", "תחליב", "סבון", "משחת", "מברשת", "מי", "דאודורנט", "ג'ל", "סכיני", "גילוח", "תחבושות", "טמפונים",
+    "נייר", "מגבוני", "נוזל", "טבליות", "קפסולות", "אריאל", "פרסיל", "בדין", "לנור", "אקונומיקה", "סנו", "מסיר", "מטליות", "שקיות", "ניילון",
+    "חיתולי", "האגיס", "פמפרס", "מטרנה", "סימילאק", "נוטרילון", "דייסת", "גרבר"
+}
+
 class BasketQuery(BaseModel):
     items: list[str]
     user_lat: float = 32.9691
     user_lon: float = 35.5422
     max_radius: float = 60.0
 
-def split_smart_stream(raw_text: str) -> list[str]:
-    """מפצל טקסט חופשי לרשימת פריטים גם ללא פסיקים או ירידות שורה"""
+def parse_smart_shopping_stream(raw_text: str) -> list[dict]:
+    """
+    מפענח טבעי המפרק רצף טקסט למוצרים וכמויות,
+    כולל מקרים ללא פסיקים כמו: '4 חלב 2 קוטג 3 קוקה קולה לחם אחיד'
+    """
     text = raw_text.strip()
     if not text:
         return []
 
-    # 1. אם יש פסיקים, נקודה-פסיק או שורות חדשות - נפצל לפיהם קודם
-    if re.search(r'[,;\n]', text):
-        chunks = re.split(r'[,;\n]+', text)
-    else:
-        chunks = [text]
+    # פיצול ראשוני לפי סימני פיסוק אם קיימים
+    lines = re.split(r'[,;\n+]+', text)
+    result_items = []
 
-    final_items = []
-    for chunk in chunks:
-        chunk = chunk.strip()
-        if not chunk:
+    for line in lines:
+        line = line.strip()
+        if not line:
             continue
 
-        # 2. זיהוי גבולות כמות (לדוגמה: "4 חלב 2 קוטג 5% 3 קולה 1.5 ליטר")
-        # מפצל לפני ספרה שלא מלווה בנקודה עשרונית (נפח) ולא אחרי אחוזים
-        sub_items = re.split(r'(?<=[^\d%.\s])\s+(?=\d+\s*(?:יחידות|יח|x|\*|\s)\s*[א-ת])', chunk)
-        
-        if len(sub_items) > 1:
-            final_items.extend([s.strip() for s in sub_items if s.strip()])
-        else:
-            # 3. אם מדובר ברצף מילים ללא ספרות כלל (למשל: "חלב ביצים קוטג לחם")
-            words = chunk.split()
-            if len(words) > 3 and not any(char.isdigit() for char in chunk):
-                final_items.extend(words)
-            else:
-                final_items.append(chunk)
+        tokens = line.split()
+        current_qty = 1
+        current_words = []
 
-    return final_items
+        i = 0
+        while i < len(tokens):
+            token = tokens[i]
 
-def parse_item_and_qty(raw_text: str):
-    """מפריד כמות משם המוצר"""
-    text = raw_text.strip()
-    if not text:
-        return "", 1
+            # 1. האם הטוקן הוא מספר כמות עצמאי (למשל: "4", "2x", "3 יחידות")
+            qty_match = re.match(r'^(\d+)(?:x|\*|יח|יחידות)?$', token, re.IGNORECASE)
+            if qty_match and not token.endswith('%'):
+                # אם כבר צברנו שם מוצר קודם - נשמור אותו
+                if current_words:
+                    result_items.append({
+                        "raw": " ".join(current_words),
+                        "search_term": " ".join(current_words),
+                        "qty": current_qty
+                    })
+                    current_words = []
 
-    # תבנית כמות בהתחלה (למשל: "4 חלב", "2x קוטג")
-    match = re.match(r'^(\d+)\s*(?:יחידות|יח[\'"]?|x|\*|\s)?\s*(.+)$', text, re.IGNORECASE)
-    if match:
-        qty_str, name = match.groups()
-        if not name.startswith('%') and name.strip():
-            return name.strip(), max(1, int(qty_str))
+                current_qty = max(1, int(qty_match.group(1)))
+                # דילוג על מילת יחידות אם היא מופיעה כמילה נפרדת (למשל: "3" "יחידות")
+                if i + 1 < len(tokens) and tokens[i+1] in ["יחידות", "יח", "יח'", "בקבוקים", "קופסאות", "שקיות", "מארז"]:
+                    i += 1
+                i += 1
+                continue
 
-    # תבנית כמות בסוף (למשל: "חלב x 4", "קוטג כפול 2")
-    match = re.match(r'^(.+?)\s*(?:x|\*|כפול|יחידות|יח[\'"]?)\s*(\d+)$', text, re.IGNORECASE)
-    if match:
-        name, qty_str = match.groups()
-        if name.strip():
-            return name.strip(), max(1, int(qty_str))
+            # 2. האם הטוקן הוא מילת עוגן של מוצר חדש (ויש כבר מילים שנצברו לפריט קודם)
+            clean_tok = re.sub(r'[^\u0590-\u05FFa-zA-Z]', '', token)
+            if current_words and clean_tok in PRODUCT_ANCHORS:
+                # מניעת פיצול שגוי בביטויים מחוברים נפוצים
+                prev_word = current_words[-1]
+                is_connected_phrase = (
+                    (prev_word == "קוקה" and clean_tok == "קולה") or
+                    (prev_word == "מי" and clean_tok in ["פה", "מיץ"]) or
+                    (prev_word == "עוגת" and clean_tok == "הבית") or
+                    (prev_word == "גבינת" and clean_tok in ["שמנת", "צהובה", "מוצרלה"]) or
+                    (prev_word == "שמן" and clean_tok in ["זית", "קנולה", "סויה"])
+                )
 
-    return text, 1
+                if not is_connected_phrase:
+                    result_items.append({
+                        "raw": " ".join(current_words),
+                        "search_term": " ".join(current_words),
+                        "qty": current_qty
+                    })
+                    current_words = []
+                    current_qty = 1  # איפוס כמות ברירת מחדל למוצר החדש
+
+            current_words.append(token)
+            i += 1
+
+        if current_words:
+            result_items.append({
+                "raw": " ".join(current_words),
+                "search_term": " ".join(current_words),
+                "qty": current_qty
+            })
+
+    return result_items
 
 @app.get("/")
 def health_check():
@@ -130,7 +169,7 @@ def live_compare(query: BasketQuery):
         conn = psycopg2.connect(DATABASE_URL)
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
-        # 1. שליפת רשימת הסניפים
+        # 1. שליפת כל הסניפים והרשתות
         cur.execute("""
             SELECT s.chain_id, s.store_id, c.chain_name, s.store_name, s.address, s.lat, s.lon
             FROM stores s
@@ -143,37 +182,48 @@ def live_compare(query: BasketQuery):
             conn.close()
             return {"status": "success", "results": []}
 
-        # 2. פענוח חכם של כל קלט הפריטים
+        # 2. פענוח חכם של כל המחרוזת לפריטים וכמויות
         raw_combined = " ".join(query.items)
-        split_items = split_smart_stream(raw_combined)
+        parsed_items = parse_smart_shopping_stream(raw_combined)
 
-        parsed_items = []
-        for it in split_items:
-            item_name, qty = parse_item_and_qty(it)
-            if item_name:
-                parsed_items.append({
-                    "raw": it,
-                    "search_term": item_name,
-                    "qty": qty
-                })
-
-        # 3. איתור קודי המוצרים בקטלוג
+        # 3. איתור חכם של המוצרים בקטלוג (Multi-Word Fuzzy Matching)
         matched_items_map = {}
         for p in parsed_items:
             search_term = p["search_term"]
             if search_term not in matched_items_map:
-                cur.execute("""
-                    SELECT item_code, item_name 
-                    FROM products 
-                    WHERE item_name ILIKE %s 
-                    LIMIT 1;
-                """, (f"%{search_term}%",))
-                res = cur.fetchone()
-                if res:
-                    matched_items_map[search_term] = {
-                        "item_code": res["item_code"],
-                        "item_name": res["item_name"]
-                    }
+                words = [w for w in re.split(r'\s+', search_term) if len(w) > 1]
+                
+                if words:
+                    # בניית שאילתה שבודקת שכל מילות המפתח מופיעות במוצר
+                    conditions = " AND ".join(["item_name ILIKE %s" for _ in words])
+                    params = [f"%{w}%" for w in words]
+                    
+                    cur.execute(f"""
+                        SELECT item_code, item_name 
+                        FROM products 
+                        WHERE {conditions}
+                        ORDER BY LENGTH(item_name) ASC
+                        LIMIT 1;
+                    """, tuple(params))
+                    
+                    res = cur.fetchone()
+                    
+                    # אם לא נמצא בהתאמה מלאה - נסה חיפוש לפי המילה הראשית הראשונה
+                    if not res and len(words) > 1:
+                        cur.execute("""
+                            SELECT item_code, item_name 
+                            FROM products 
+                            WHERE item_name ILIKE %s 
+                            ORDER BY LENGTH(item_name) ASC
+                            LIMIT 1;
+                        """, (f"%{words[0]}%",))
+                        res = cur.fetchone()
+
+                    if res:
+                        matched_items_map[search_term] = {
+                            "item_code": res["item_code"],
+                            "item_name": res["item_name"]
+                        }
 
         # 4. משיכת המחירים מכל הסניפים
         product_codes = [v["item_code"] for v in matched_items_map.values()]
@@ -192,7 +242,7 @@ def live_compare(query: BasketQuery):
         cur.close()
         conn.close()
 
-        # 5. חישוב סלי הקניות
+        # 5. הרכבת סלי הקניות
         results = []
         for s in stores:
             chain_id = s["chain_id"]
@@ -215,7 +265,7 @@ def live_compare(query: BasketQuery):
                         total_price += line_total
                         found_count += 1
                         details.append({
-                            "query": raw_query,
+                            "query": f"{qty}x {raw_query}" if qty > 1 and not raw_query.startswith(str(qty)) else raw_query,
                             "matched_name": match_info["item_name"],
                             "qty": qty,
                             "unit_price": unit_price,
