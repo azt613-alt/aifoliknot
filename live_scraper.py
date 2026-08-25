@@ -74,162 +74,105 @@ HEADERS = {
 
 GEO_REGISTRY = {
     "ראש פינה": (32.9691, 35.5422), "חצור הגלילית": (32.9790, 35.5480), "חצור": (32.9790, 35.5480),
-    "מחניים": (32.9860, 35.5680), "צפת": (32.9646, 35.4960), "קריית שמונה": (33.2073, 35.5721),
-    "קרית שמונה": (33.2073, 35.5721), "קצרין": (32.9920, 35.6880), "טבריה": (32.7940, 35.5312),
-    "כרמיאל": (32.9199, 35.2901), "מעלות תרשיחא": (33.0160, 35.2750), "מעלות": (33.0160, 35.2750),
-    "נהריה": (33.0059, 35.0941), "שלומי": (33.0730, 35.1430), "עכו": (32.9278, 35.0818),
-    "עפולה": (32.6078, 35.2897), "נוף הגליל": (32.7066, 35.3035), "נצרת עילית": (32.7066, 35.3035),
-    "נצרת": (32.6996, 35.3035), "מגדל העמק": (32.6730, 35.2400), "בית שאן": (32.4970, 35.4980),
-    "יקנעם": (32.6590, 35.0810), "יקנעם עילית": (32.6590, 35.0810), "חיפה": (32.7940, 34.9896),
-    "נשר": (32.7750, 35.0350), "טירת כרמל": (32.7600, 34.9700), "קרית אתא": (32.8020, 35.1050),
-    "קרית ביאליק": (32.8320, 35.0800), "קרית מוצקין": (32.8380, 35.0780), "קרית ים": (32.8450, 35.0680),
-    "קרית טבעון": (32.7150, 35.1250), "עתלית": (32.6880, 34.9350), "חדרה": (32.4340, 34.9190),
+    "צפת": (32.9646, 35.4960), "קריית שמונה": (33.2073, 35.5721), "קרית שמונה": (33.2073, 35.5721),
+    "קצרין": (32.9920, 35.6880), "טבריה": (32.7940, 35.5312), "כרמיאל": (32.9199, 35.2901),
+    "מעלות תרשיחא": (33.0160, 35.2750), "מעלות": (33.0160, 35.2750), "נהריה": (33.0059, 35.0941),
+    "שלומי": (33.0730, 35.1430), "עכו": (32.9278, 35.0818), "עפולה": (32.6078, 35.2897),
+    "נוף הגליל": (32.7066, 35.3035), "נצרת עילית": (32.7066, 35.3035), "נצרת": (32.6996, 35.3035),
+    "מגדל העמק": (32.6730, 35.2400), "בית שאן": (32.4970, 35.4980), "יקנעם": (32.6590, 35.0810),
+    "חיפה": (32.7940, 34.9896), "נשר": (32.7750, 35.0350), "טירת כרמל": (32.7600, 34.9700),
+    "קרית אתא": (32.8020, 35.1050), "קרית ביאליק": (32.8320, 35.0800), "קרית מוצקין": (32.8380, 35.0780),
+    "קרית ים": (32.8450, 35.0680), "קרית טבעון": (32.7150, 35.1250), "חדרה": (32.4340, 34.9190),
     "אור עקיבא": (32.5060, 34.9180), "זכרון יעקב": (32.5730, 34.9530), "בנימינה": (32.5180, 34.9500),
-    "פרדס חנה כרכור": (32.4710, 34.9720), "פרדס חנה": (32.4710, 34.9720), "חריש": (32.4600, 35.0400),
-    "נתניה": (32.3215, 34.8532), "כפר יונה": (32.3160, 34.9350), "אבן יהודה": (32.2700, 34.8900),
-    "תל מונד": (32.2550, 34.9180), "קדימה צורן": (32.2780, 34.9150), "כפר סבא": (32.1844, 34.8708),
-    "רעננה": (32.1840, 34.8710), "הוד השרון": (32.1550, 34.8880), "הרצליה": (32.1663, 34.8433),
-    "רמת השרון": (32.1480, 34.8390), "תל אביב - יפו": (32.0853, 34.7818), "תל אביב": (32.0853, 34.7818),
-    "רמת גן": (32.0684, 34.8248), "גבעתיים": (32.0720, 34.8100), "בני ברק": (32.0944, 34.8322),
-    "פתח תקווה": (32.0840, 34.8878), "גבעת שמואל": (32.0780, 34.8480), "קרית אונו": (32.0630, 34.8580),
-    "גני תקווה": (32.0600, 34.8700), "יהוד": (32.0330, 34.8900), "אור יהודה": (32.0290, 34.8550),
-    "ראש העין": (32.0950, 34.9560), "חולון": (32.0158, 34.7874), "בת ים": (32.0200, 34.7500),
-    "ראשון לציון": (31.9730, 34.7925), "נס ציונה": (31.9300, 34.7990), "רחובות": (31.8928, 34.8113),
-    "באר יעקב": (31.9380, 34.8350), "רמלה": (31.9270, 34.8640), "לוד": (31.9520, 34.8970),
-    "שוהם": (31.9980, 34.9450), "מודיעין מכבים רעות": (31.8903, 35.0104), "מודיעין": (31.8903, 35.0104),
+    "פרדס חנה כרכור": (32.4710, 34.9720), "חריש": (32.4600, 35.0400), "נתניה": (32.3215, 34.8532),
+    "כפר יונה": (32.3160, 34.9350), "כפר סבא": (32.1844, 34.8708), "רעננה": (32.1840, 34.8710),
+    "הוד השרון": (32.1550, 34.8880), "הרצליה": (32.1663, 34.8433), "רמת השרון": (32.1480, 34.8390),
+    "תל אביב - יפו": (32.0853, 34.7818), "תל אביב": (32.0853, 34.7818), "רמת גן": (32.0684, 34.8248),
+    "גבעתיים": (32.0720, 34.8100), "בני ברק": (32.0944, 34.8322), "פתח תקווה": (32.0840, 34.8878),
+    "גבעת שמואל": (32.0780, 34.8480), "קרית אונו": (32.0630, 34.8580), "חולון": (32.0158, 34.7874),
+    "בת ים": (32.0200, 34.7500), "ראשון לציון": (31.9730, 34.7925), "נס ציונה": (31.9300, 34.7990),
+    "רחובות": (31.8928, 34.8113), "באר יעקב": (31.9380, 34.8350), "רמלה": (31.9270, 34.8640),
+    "לוד": (31.9520, 34.8970), "מודיעין מכבים רעות": (31.8903, 35.0104), "מודיעין": (31.8903, 35.0104),
     "ירושלים": (31.7683, 35.2137), "מבשרת ציון": (31.7997, 35.1542), "מעלה אדומים": (31.7921, 35.2974),
-    "בית שמש": (31.7470, 34.9881), "ביתר עילית": (31.6980, 35.1150), "יבנה": (31.8767, 34.7408),
-    "גדרה": (31.8130, 34.7780), "גן יבנה": (31.7880, 34.7150), "קרית עקרון": (31.8600, 34.8200),
-    "אשדוד": (31.8044, 34.6553), "אשקלון": (31.6688, 34.5743), "קרית גת": (31.6100, 34.7640),
-    "קרית מלאכי": (31.7280, 34.7450), "שדרות": (31.5215, 34.5959), "נתיבות": (31.4200, 34.5800),
-    "אופקים": (31.3140, 34.6200), "באר שבע": (31.2529, 34.7915), "דימונה": (31.0700, 35.0300),
-    "ערד": (31.2610, 35.2140), "אילת": (29.5577, 34.9519)
+    "בית שמש": (31.7470, 34.9881), "יבנה": (31.8767, 34.7408), "אשדוד": (31.8044, 34.6553),
+    "אשקלון": (31.6688, 34.5743), "קרית גת": (31.6100, 34.7640), "שדרות": (31.5215, 34.5959),
+    "נתיבות": (31.4200, 34.5800), "אופקים": (31.3140, 34.6200), "באר שבע": (31.2529, 34.7915),
+    "דימונה": (31.0700, 35.0300), "ערד": (31.2610, 35.2140), "אילת": (29.5577, 34.9519)
 }
 
-def resolve_coords_from_address(store_name: str, address: str, city: str):
-    combined_text = f"{city} {address} {store_name}".strip()
+def resolve_coords(store_name: str, address: str, city: str):
+    combined = f"{city} {address} {store_name}".strip()
     if city and city in GEO_REGISTRY:
         return GEO_REGISTRY[city]
-    for place, (lat, lon) in GEO_REGISTRY.items():
-        if place in combined_text:
-            return lat, lon
+    for place, coords in GEO_REGISTRY.items():
+        if place in combined:
+            return coords
     return 32.0853, 34.7818
 
 def parse_stores_xml_universal(file_url: str, auth, chain_id: str):
-    """מפענח סניפים אוניברסלי - תומך בכל מבני התגיות של כלל הרשתות"""
     stores = []
     try:
-        logging.info(f"מוריד קובץ סניפים: {file_url[:80]}...")
-        resp = requests.get(file_url, headers=HEADERS, auth=auth, stream=True, timeout=45)
+        session = requests.Session()
+        resp = session.get(file_url, headers=HEADERS, auth=auth, timeout=30)
         if resp.status_code != 200:
             return stores
 
         is_gz = file_url.endswith(".gz") or resp.content[:2] == b'\x1f\x8b'
         file_obj = gzip.GzipFile(fileobj=io.BytesIO(resp.content)) if is_gz else io.BytesIO(resp.content)
 
-        context = etree.iterparse(
-            file_obj,
-            events=('end',),
-            tag=['Store', 'STORE', 'store', 'Branch', 'BRANCH', 'branch']
-        )
-        for event, elem in context:
-            store_id = None
-            store_name = None
+        context = etree.iterparse(file_obj, events=('end',), tag=['Store', 'STORE', 'store', 'Branch', 'BRANCH'])
+        for _, elem in context:
+            s_id = None
+            s_name = None
             address = ""
             city = ""
 
             for child in elem:
-                tag_name = child.tag.lower().split('}')[-1]
+                tag = child.tag.lower().split('}')[-1]
                 val = (child.text or "").strip()
                 if not val:
                     continue
-
-                if tag_name in ['storeid', 'branchid', 'store_id', 'branch_id', 'id']:
-                    store_id = val
-                elif tag_name in ['storename', 'branchname', 'store_name', 'branch_name', 'name']:
-                    store_name = val
-                elif tag_name in ['address', 'street', 'streetname', 'storeaddress']:
+                if tag in ['storeid', 'branchid', 'id']:
+                    s_id = val
+                elif tag in ['storename', 'branchname', 'name']:
+                    s_name = val
+                elif tag in ['address', 'street', 'storeaddress']:
                     address = val
-                elif tag_name in ['city', 'cityname']:
+                elif tag in ['city', 'cityname']:
                     city = val
 
-            if store_id:
-                if not store_name:
-                    store_name = f"סניף {store_id}"
-                lat, lon = resolve_coords_from_address(store_name, address, city)
-                full_address = f"{address}, {city}".strip(", ") if city and city not in address else (address or city)
-                stores.append((chain_id, store_id, store_name, full_address, lat, lon))
+            if s_id:
+                name = s_name or f"סניף {s_id}"
+                lat, lon = resolve_coords(name, address, city)
+                full_addr = f"{address}, {city}".strip(", ") if city and city not in address else (address or city)
+                stores.append((chain_id, s_id, name, full_addr, lat, lon))
 
             elem.clear()
             while elem.getprevious() is not None:
                 del elem.getparent()[0]
         del context
-
     except Exception as e:
-        logging.error(f"שגיאה בפענוח סניפים מ-{file_url}: {e}")
-
+        logging.error(f"תקלה בפיענוח סניפים מ-{file_url}: {e}")
     return stores
 
 def fetch_shufersal_stores_files():
-    files = []
     try:
-        url = CHAIN_CONFIGS["7290027600007"]["stores_url"]
-        r = requests.get(url, headers=HEADERS, timeout=20)
+        r = requests.get(CHAIN_CONFIGS["7290027600007"]["stores_url"], headers=HEADERS, timeout=15)
         if r.status_code == 200:
-            matches = re.findall(r'href=[\'"]([^\'"]*Stores[^\'"]*\.gz)[\'"]', r.text, re.IGNORECASE)
-            files = list(set(matches))
-    except Exception as e:
-        logging.warning(f"שופרסל: תקלה בשליפת קבצי סניפים ({e})")
-    return files
+            return list(set(re.findall(r'href=[\'"]([^\'"]*Stores[^\'"]*\.gz)[\'"]', r.text, re.IGNORECASE)))
+    except Exception:
+        pass
+    return []
 
 def fetch_cerberus_stores_files(portal_url: str, auth):
-    files = []
     try:
-        r = requests.get(portal_url, headers=HEADERS, auth=auth, timeout=25)
+        r = requests.get(portal_url, headers=HEADERS, auth=auth, timeout=15)
         if r.status_code == 200:
             matches = re.findall(r'href=[\'"]([^\'"]*(?:download\?file=Stores|Stores)[^\'"]*)[\'"]', r.text, re.IGNORECASE)
-            for m in set(matches):
-                full_url = m if m.startswith("http") else f"https://url.publishedprices.co.il{m}"
-                files.append(full_url)
-    except Exception as e:
-        logging.warning(f"Cerberus ({portal_url}): תקלה בשליפת קבצי סניפים ({e})")
-    return files
-
-def sync_pure_official_stores(conn):
-    """מושך ומפענח את כלל סניפי האמת מכל הרשתות ישירות מה-XML"""
-    logging.info("🏢 מושך סניפי אמת מקבצי ה-XML הממשלתיים...")
-    all_stores = []
-
-    # 1. שופרסל (פורק את כל תתי הרשתות)
-    shuf_files = fetch_shufersal_stores_files()
-    for s_url in shuf_files:
-        stores = parse_stores_xml_universal(s_url, None, "7290027600007")
-        all_stores.extend(stores)
-
-    # 2. 7 רשתות Cerberus
-    for c_id, cfg in CHAIN_CONFIGS.items():
-        if c_id == "7290027600007":
-            continue
-        c_files = fetch_cerberus_stores_files(cfg["portal_url"], cfg["auth"])
-        for s_url in c_files:
-            stores = parse_stores_xml_universal(s_url, cfg["auth"], c_id)
-            all_stores.extend(stores)
-
-    # ניקוי כפילויות של (chain_id, store_id)
-    unique_stores = list({(s[0], s[1]): s for s in all_stores}.values())
-
-    if unique_stores:
-        with conn.cursor() as cur:
-            cur.execute("TRUNCATE store_prices, stores, products, chains CASCADE;")
-            execute_batch(cur, "INSERT INTO chains (chain_id, chain_name) VALUES (%s, %s);", SUPPORTED_CHAINS)
-            execute_batch(cur, """
-                INSERT INTO stores (chain_id, store_id, store_name, address, lat, lon)
-                VALUES (%s, %s, %s, %s, %s, %s)
-                ON CONFLICT (chain_id, store_id) DO NOTHING;
-            """, unique_stores, page_size=1000)
-            conn.commit()
-        logging.info(f"✨ נרשמו בהצלחה {len(unique_stores)} סניפי אמת בלבד!")
-    return len(unique_stores)
+            return [m if m.startswith("http") else f"https://url.publishedprices.co.il{m}" for m in set(matches)]
+    except Exception:
+        pass
+    return []
 
 def build_1000_products_catalog():
     items = [
@@ -277,18 +220,41 @@ def build_1000_products_catalog():
         items.append((f"7290099{i:06d}", f"מוצר צריכה מבוקש סדרה {i}", "ספקי ישראל", round(5.0 + (i % 30) * 0.9, 2)))
     return items[:1000]
 
-def populate_initial_prices(conn):
-    catalog_1000 = build_1000_products_catalog()
+def sync_pure_official_stores(conn):
+    logging.info("🧹 מנקה מסד ומתחיל פריקה של סניפי אמת מקבצי הרשתות...")
+    all_stores = []
+
+    # 1. שופרסל
+    for s_url in fetch_shufersal_stores_files():
+        all_stores.extend(parse_stores_xml_universal(s_url, None, "7290027600007"))
+
+    # 2. שאר הרשתות
+    for c_id, cfg in CHAIN_CONFIGS.items():
+        if c_id == "7290027600007":
+            continue
+        for s_url in fetch_cerberus_stores_files(cfg["portal_url"], cfg["auth"]):
+            all_stores.extend(parse_stores_xml_universal(s_url, cfg["auth"], c_id))
+
+    unique_stores = list({(s[0], s[1]): s for s in all_stores}.values())
+
     with conn.cursor() as cur:
+        cur.execute("TRUNCATE store_prices, stores, products, chains CASCADE;")
+        execute_batch(cur, "INSERT INTO chains (chain_id, chain_name) VALUES (%s, %s);", SUPPORTED_CHAINS)
+
+        if unique_stores:
+            execute_batch(cur, """
+                INSERT INTO stores (chain_id, store_id, store_name, address, lat, lon)
+                VALUES (%s, %s, %s, %s, %s, %s)
+                ON CONFLICT (chain_id, store_id) DO NOTHING;
+            """, unique_stores, page_size=1000)
+
+        # קטלוג מוצרים ומחירי בסיס
+        catalog_1000 = build_1000_products_catalog()
         products = [(c, n, m) for c, n, m, _ in catalog_1000]
-        execute_batch(cur, """
-            INSERT INTO products (item_code, item_name, manufacturer_name)
-            VALUES (%s, %s, %s)
-            ON CONFLICT (item_code) DO NOTHING;
-        """, products, page_size=1000)
+        execute_batch(cur, "INSERT INTO products (item_code, item_name, manufacturer_name) VALUES (%s, %s, %s);", products, page_size=1000)
 
         cur.execute("SELECT chain_id, store_id FROM stores;")
-        stores = cur.fetchall()
+        active_stores = cur.fetchall()
 
         multipliers = {
             "7290027600007": 1.05, "7290058140886": 0.94, "7290803800003": 0.95,
@@ -296,7 +262,7 @@ def populate_initial_prices(conn):
             "7290873255550": 1.10, "7290661400001": 0.96
         }
         init_prices = []
-        for chain_id, store_id in stores:
+        for chain_id, store_id in active_stores:
             m = multipliers.get(chain_id, 1.0)
             for code, _, _, base_p in catalog_1000:
                 init_prices.append((chain_id, store_id, code, round(base_p * m, 2)))
@@ -306,85 +272,10 @@ def populate_initial_prices(conn):
             VALUES (%s, %s, %s, %s, CURRENT_TIMESTAMP)
             ON CONFLICT (chain_id, store_id, item_code) DO NOTHING;
         """, init_prices, page_size=10000)
+
         conn.commit()
 
-def stream_and_parse_prices_xml(gz_url: str, auth, target_codes: set, chain_id: str):
-    extracted_prices = []
-    try:
-        logging.info(f"מוריד קובץ מחירים חי: {gz_url[:80]}...")
-        resp = requests.get(gz_url, headers=HEADERS, auth=auth, stream=True, timeout=45)
-        if resp.status_code != 200:
-            return extracted_prices
-
-        with gzip.GzipFile(fileobj=io.BytesIO(resp.content)) as gz_file:
-            context = etree.iterparse(gz_file, events=('end',), tag=['Item', 'Product'])
-            for event, elem in context:
-                item_code_elem = elem.find('ItemCode') or elem.find('itemcode')
-                price_elem = elem.find('ItemPrice') or elem.find('itemprice')
-                store_elem = elem.find('StoreId') or elem.find('storeid') or elem.find('BranchId') or elem.find('branchid')
-
-                if item_code_elem is not None and price_elem is not None:
-                    raw_code = str(item_code_elem.text).strip()
-                    matched_code = raw_code if raw_code in target_codes else raw_code.lstrip('0')
-                    
-                    if matched_code in target_codes or raw_code in target_codes:
-                        final_code = raw_code if raw_code in target_codes else matched_code
-                        try:
-                            price_val = float(price_elem.text)
-                            store_id = str(store_elem.text).strip() if store_elem is not None and store_elem.text else "001"
-                            extracted_prices.append((chain_id, store_id, final_code, price_val))
-                        except (ValueError, TypeError):
-                            pass
-
-                elem.clear()
-                while elem.getprevious() is not None:
-                    del elem.getparent()[0]
-            del context
-
-    except Exception as e:
-        logging.error(f"שגיאה בעיבוד מחירים מ-{gz_url}: {e}")
-
-    return extracted_prices
-
-def get_shufersal_prices_files():
-    files = []
-    try:
-        url = CHAIN_CONFIGS["7290027600007"]["prices_url"]
-        r = requests.get(url, headers=HEADERS, timeout=20)
-        if r.status_code == 200:
-            matches = re.findall(r'href=[\'"]([^\'"]*PriceFull[^\'"]*\.gz)[\'"]', r.text, re.IGNORECASE)
-            files.extend(matches)
-    except Exception as e:
-        logging.warning(f"שופרסל: תקלה בשליפת מחירי אמת ({e})")
-    return files[:3]
-
-def get_cerberus_prices_files(portal_url: str, auth):
-    files = []
-    try:
-        r = requests.get(portal_url, headers=HEADERS, auth=auth, timeout=25)
-        if r.status_code == 200:
-            matches = re.findall(r'href=[\'"]([^\'"]*(?:download\?file=PriceFull|PriceFull)[^\'"]*)[\'"]', r.text, re.IGNORECASE)
-            for href in set(matches):
-                full_url = href if href.startswith("http") else f"https://url.publishedprices.co.il{href}"
-                files.append(full_url)
-    except Exception as e:
-        logging.warning(f"Cerberus ({portal_url}): תקלה בשליפת מחירי אמת ({e})")
-    return files[:2]
-
-def upsert_live_prices(conn, prices_data: list):
-    if not prices_data:
-        return
-    with conn.cursor() as cur:
-        query = """
-            INSERT INTO store_prices (chain_id, store_id, item_code, item_price, price_update_date)
-            VALUES (%s, %s, %s, %s, CURRENT_TIMESTAMP)
-            ON CONFLICT (chain_id, store_id, item_code) 
-            DO UPDATE SET 
-                item_price = EXCLUDED.item_price,
-                price_update_date = CURRENT_TIMESTAMP;
-        """
-        execute_batch(cur, query, prices_data, page_size=2000)
-        conn.commit()
+    return len(unique_stores)
 
 def main():
     if not DATABASE_URL:
@@ -412,35 +303,9 @@ def main():
         """)
         conn.commit()
 
-    # 1. טעינה של כלל סניפי האמת מכל הרשתות ישירות מה-XML
-    total_stores = sync_pure_official_stores(conn)
-
-    # 2. הזנת קטלוג ומחירים
-    populate_initial_prices(conn)
-
-    # 3. משיכת מחירי אמת
-    catalog_1000 = build_1000_products_catalog()
-    target_codes = {c for c, _, _, _ in catalog_1000}
-    logging.info("מתחיל סנכרון חי של קובצי מחירים...")
-
-    total_synced = 0
-    for file_url in get_shufersal_prices_files():
-        prices = stream_and_parse_prices_xml(file_url, None, target_codes, "7290027600007")
-        if prices:
-            upsert_live_prices(conn, prices)
-            total_synced += len(prices)
-
-    cerberus_chains = ["7290058140886", "7290803800003", "7290103152017", "7290696200003", "7290725900003", "7290873255550", "7290661400001"]
-    for c_id in cerberus_chains:
-        cfg = CHAIN_CONFIGS[c_id]
-        for file_url in get_cerberus_prices_files(cfg["portal_url"], cfg["auth"]):
-            prices = stream_and_parse_prices_xml(file_url, cfg["auth"], target_codes, c_id)
-            if prices:
-                upsert_live_prices(conn, prices)
-                total_synced += len(prices)
-
+    count = sync_pure_official_stores(conn)
     conn.close()
-    logging.info(f"✨ סנכרון הושלם! נרשמו {total_stores} סניפי אמת פעילים.")
+    logging.info(f"✨ הושלם! נטענו {count} סניפי אמת מנוקים בלבד.")
 
 if __name__ == "__main__":
     main()
