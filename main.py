@@ -1,5 +1,6 @@
 import os
 import psycopg2
+from psycopg2.extras import RealDictCursor
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -21,82 +22,132 @@ class BasketQuery(BaseModel):
     items: list[str]
     user_lat: float
     user_lon: float
-    max_radius: float = 30.0
+    max_radius: float = 60.0
 
 @app.get("/")
 def health_check():
     return {"status": "online", "service": "AIפה לקנות API"}
 
+@app.get("/api/debug")
+def debug_status():
+    """בדיקת סטטוס מסד הנתונים וכמות הרשומות"""
+    if not DATABASE_URL:
+        return {"status": "error", "message": "DATABASE_URL is missing"}
+    try:
+        conn = psycopg2.connect(DATABASE_URL)
+        cur = conn.cursor()
+        cur.execute("SELECT COUNT(*) FROM chains;")
+        chains_count = cur.fetchone()[0]
+        cur.execute("SELECT COUNT(*) FROM stores;")
+        stores_count = cur.fetchone()[0]
+        cur.execute("SELECT COUNT(*) FROM products;")
+        products_count = cur.fetchone()[0]
+        cur.execute("SELECT COUNT(*) FROM store_prices;")
+        prices_count = cur.fetchone()[0]
+        cur.close()
+        conn.close()
+        return {
+            "status": "connected",
+            "chains": chains_count,
+            "stores": stores_count,
+            "products": products_count,
+            "prices": prices_count
+        }
+    except Exception as e:
+        return {"status": "error", "error_details": str(e)}
+
 @app.get("/api/run-scraper")
 def trigger_scraper():
-    run_scraper_task()
-    return {"status": "success", "message": "Scraper completed successfully"}
+    try:
+        run_scraper_task()
+        return {"status": "success", "message": "Scraper completed successfully"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
 @app.post("/api/live-compare")
 def live_compare(query: BasketQuery):
     if not DATABASE_URL:
-        return {"status": "error", "message": "Database not configured"}
+        return {"status": "error", "message": "DATABASE_URL not configured"}
 
-    conn = psycopg2.connect(DATABASE_URL)
-    cur = conn.cursor()
+    try:
+        conn = psycopg2.connect(DATABASE_URL)
+        cur = conn.cursor()
 
-    cur.execute("""
-        SELECT s.chain_id, s.store_id, c.chain_name, s.store_name, s.address, s.lat, s.lon
-        FROM stores s
-        JOIN chains c ON s.chain_id = c.chain_id;
-    """)
-    stores = cur.fetchall()
+        # ודא קיום תוסף חיפוש
+        cur.execute("CREATE EXTENSION IF NOT EXISTS pg_trgm;")
+        conn.commit()
 
-    results = []
+        cur.execute("""
+            SELECT s.chain_id, s.store_id, c.chain_name, s.store_name, s.address, s.lat, s.lon
+            FROM stores s
+            JOIN chains c ON s.chain_id = c.chain_id;
+        """)
+        stores = cur.fetchall()
 
-    for chain_id, store_id, chain_name, store_name, address, lat, lon in stores:
-        total_price = 0.0
-        details = []
-        found_count = 0
+        if not stores:
+            cur.close()
+            conn.close()
+            return {"status": "success", "results": []}
 
-        for item_text in query.items:
-            cur.execute("""
-                SELECT p.item_code, p.item_name, sp.item_price
-                FROM products p
-                JOIN store_prices sp ON p.item_code = sp.item_code
-                WHERE sp.chain_id = %s AND sp.store_id = %s
-                  AND (p.item_name % %s OR p.item_name ILIKE %s)
-                ORDER BY similarity(p.item_name, %s) DESC
-                LIMIT 1;
-            """, (chain_id, store_id, item_text, f"%{item_text}%", item_text))
-            
-            match = cur.fetchone()
-            if match:
-                price = float(match[2])
-                total_price += price
-                found_count += 1
-                details.append({
-                    "query": item_text,
-                    "matched_name": match[1],
-                    "qty": 1,
-                    "price": price
+        results = []
+
+        for chain_id, store_id, chain_name, store_name, address, lat, lon in stores:
+            total_price = 0.0
+            details = []
+            found_count = 0
+
+            for item_text in query.items:
+                clean_item = item_text.strip()
+                if not clean_item:
+                    continue
+
+                # חיפוש חכם וגמיש
+                cur.execute("""
+                    SELECT p.item_code, p.item_name, sp.item_price
+                    FROM products p
+                    JOIN store_prices sp ON p.item_code = sp.item_code
+                    WHERE sp.chain_id = %s AND sp.store_id = %s
+                      AND (p.item_name ILIKE %s OR p.item_name % %s)
+                    ORDER BY (p.item_name ILIKE %s) DESC, similarity(p.item_name, %s) DESC
+                    LIMIT 1;
+                """, (chain_id, store_id, f"%{clean_item}%", clean_item, f"%{clean_item}%", clean_item))
+                
+                match = cur.fetchone()
+                if match:
+                    price = float(match[2])
+                    total_price += price
+                    found_count += 1
+                    details.append({
+                        "query": clean_item,
+                        "matched_name": match[1],
+                        "qty": 1,
+                        "price": price
+                    })
+                else:
+                    details.append({
+                        "query": clean_item,
+                        "matched_name": "לא נמצא במלאי",
+                        "qty": 1,
+                        "price": None
+                    })
+
+            if found_count > 0:
+                results.append({
+                    "chain_name": chain_name,
+                    "store_name": store_name,
+                    "address": address,
+                    "lat": float(lat) if lat else 32.9790,
+                    "lon": float(lon) if lon else 35.5480,
+                    "total_price": round(total_price, 2),
+                    "found_items_count": f"{found_count}/{len(query.items)}",
+                    "details": details
                 })
-            else:
-                details.append({
-                    "query": item_text,
-                    "matched_name": "לא נמצא במלאי",
-                    "qty": 1,
-                    "price": None
-                })
 
-        if total_price > 0:
-            results.append({
-                "chain_name": chain_name,
-                "store_name": store_name,
-                "address": address,
-                "lat": lat,
-                "lon": lon,
-                "total_price": round(total_price, 2),
-                "found_items_count": f"{found_count}/{len(query.items)}",
-                "details": details
-            })
+        cur.close()
+        conn.close()
 
-    cur.close()
-    conn.close()
-    results.sort(key=lambda x: x["total_price"])
-    return {"status": "success", "results": results}
+        results.sort(key=lambda x: x["total_price"])
+        return {"status": "success", "results": results}
+
+    except Exception as e:
+        return {"status": "error", "message": f"Database query failed: {str(e)}"}
