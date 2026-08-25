@@ -121,7 +121,7 @@ def resolve_coords_from_address(store_name: str, address: str, city: str):
 def parse_stores_xml_stream(file_url: str, auth, chain_id: str):
     stores = []
     try:
-        logging.info(f"מוריד קובץ סניפים רשמי: {file_url[:80]}...")
+        logging.info(f"מוריד קובץ סניפים: {file_url[:80]}...")
         resp = requests.get(file_url, headers=HEADERS, auth=auth, stream=True, timeout=40)
         if resp.status_code != 200:
             logging.warning(f"שגיאה בהורדת קובץ סניפים: HTTP {resp.status_code}")
@@ -163,46 +163,57 @@ def fetch_shufersal_stores_files():
         url = CHAIN_CONFIGS["7290027600007"]["stores_url"]
         r = requests.get(url, headers=HEADERS, timeout=20)
         if r.status_code == 200:
-            matches = re.findall(r'href=[\'"]([^\'"]*Stores(?:Full)?[^\'"]*\.gz)[\'"]', r.text, re.IGNORECASE)
+            matches = re.findall(r'href=[\'"]([^\'"]*Stores[^\'"]*(?:\.gz|\.xml))[\'"]', r.text, re.IGNORECASE)
             files = list(set(matches))
     except Exception as e:
-        logging.warning(f"שופרסל: לא אותרו קובצי StoresFull ({e})")
+        logging.warning(f"שופרסל: תקלה בשליפת קבצי סניפים ({e})")
     return files
 
-def fetch_cerberus_stores_file(portal_url: str, auth):
+def fetch_cerberus_stores_files(portal_url: str, auth):
+    files = []
     try:
         r = requests.get(portal_url, headers=HEADERS, auth=auth, timeout=25)
         if r.status_code == 200:
-            full_matches = re.findall(r'href=[\'"]([^\'"]*StoresFull[^\'"]*(?:\.gz|\.xml))[\'"]', r.text, re.IGNORECASE)
-            if full_matches:
-                target = full_matches[-1]
-                return target if target.startswith("http") else f"https://url.publishedprices.co.il{target}"
             matches = re.findall(r'href=[\'"]([^\'"]*Stores[^\'"]*(?:\.gz|\.xml))[\'"]', r.text, re.IGNORECASE)
-            if matches:
-                target = matches[-1]
-                return target if target.startswith("http") else f"https://url.publishedprices.co.il{target}"
+            for m in set(matches):
+                full_url = m if m.startswith("http") else f"https://url.publishedprices.co.il{m}"
+                files.append(full_url)
     except Exception as e:
         logging.warning(f"Cerberus ({portal_url}): תקלה בשליפת קובץ סניפים ({e})")
-    return None
+    return files
 
 def sync_official_stores(conn):
-    logging.info("🏢 מתחיל סנכרון אוטומטי של סניפי אמת מקובצי StoresFull...")
+    logging.info("🏢 מתחיל סנכרון אוטומטי של סניפי אמת מכל קובצי הרשתות...")
     all_official_stores = []
 
+    # 1. שופרסל
     shuf_stores_files = fetch_shufersal_stores_files()
+    shuf_count = 0
     for s_url in shuf_stores_files:
         stores = parse_stores_xml_stream(s_url, None, "7290027600007")
         all_official_stores.extend(stores)
+        shuf_count += len(stores)
+    logging.info(f"שופרסל: נאספו {shuf_count} סניפים.")
 
+    # 2. רשתות Cerberus
     for c_id, cfg in CHAIN_CONFIGS.items():
         if c_id == "7290027600007":
             continue
-        stores_url = fetch_cerberus_stores_file(cfg["portal_url"], cfg["auth"])
-        if stores_url:
-            stores = parse_stores_xml_stream(stores_url, cfg["auth"], c_id)
+        c_files = fetch_cerberus_stores_files(cfg["portal_url"], cfg["auth"])
+        c_count = 0
+        for s_url in c_files:
+            stores = parse_stores_xml_stream(s_url, cfg["auth"], c_id)
             all_official_stores.extend(stores)
+            c_count += len(stores)
+        logging.info(f"{cfg['name']}: נאספו {c_count} סניפים.")
 
-    if all_official_stores:
+    # ניקוי כפילויות של (chain_id, store_id)
+    unique_stores_map = {}
+    for s in all_official_stores:
+        unique_stores_map[(s[0], s[1])] = s
+    unique_stores = list(unique_stores_map.values())
+
+    if unique_stores:
         with conn.cursor() as cur:
             cur.execute("DELETE FROM store_prices;")
             cur.execute("DELETE FROM stores;")
@@ -215,9 +226,10 @@ def sync_official_stores(conn):
                     lat = EXCLUDED.lat,
                     lon = EXCLUDED.lon;
             """
-            execute_batch(cur, query, all_official_stores, page_size=1000)
+            execute_batch(cur, query, unique_stores, page_size=1000)
             conn.commit()
-        logging.info(f"✨ נטענו בהצלחה {len(all_official_stores)} סניפים פעילים ישירות מהרשתות!")
+        logging.info(f"✨ נרשמו בהצלחה {len(unique_stores)} סניפים ייחודיים במסד הנתונים!")
+    return len(unique_stores)
 
 def build_1000_products_catalog():
     items = []
